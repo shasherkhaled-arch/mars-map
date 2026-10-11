@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mars Map | Jezero Crater</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/globe.gl"></script>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex;
+      flex-direction: column;
+      font-family: Tahoma, Arial, sans-serif;
+      color: #f2e9e4;
+      background:
+        radial-gradient(1.5px 1.5px at 20px 30px, #fff, transparent),
+        radial-gradient(1px 1px at 90px 120px, #fff, transparent),
+        radial-gradient(2px 2px at 160px 70px, #ffd9b3, transparent),
+        radial-gradient(1px 1px at 230px 180px, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 300px 40px, #cfe3ff, transparent),
+        radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+      background-size: 320px 220px, 320px 220px, 320px 220px, 320px 220px, 320px 220px, 100% 100%;
+      background-color: #090a0f;
+    }
+    header {
+      padding: 10px 20px;
+      background: rgba(9, 10, 15, 0.75);
+      border-bottom: 1px solid #c1440e;
+    }
+    header h1 { margin: 0; font-size: 20px; color: #ff8c5a; }
+    header p { margin: 2px 0 0; font-size: 13px; color: #b8c1d1; }
+    #map { flex: 1; background: transparent; }
+    .leaflet-container { background: transparent; }
+    .leaflet-control-layers,
+    .leaflet-bar a {
+      background: rgba(9, 10, 15, 0.85);
+      color: #f2e9e4;
+      border-color: #c1440e;
+    }
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      background: #14192b;
+      color: #f2e9e4;
+      border: 1px solid #c1440e;
+    }
+    .leaflet-popup-content { direction: ltr; text-align: left; line-height: 1.8; }
+    .mars-pin {
+      width: 18px;
+      height: 18px;
+      background: #ff4d2e;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 0 4px rgba(255, 77, 46, 0.35), 0 0 14px #ff4d2e;
+    }
+    .map-info {
+      background: rgba(9, 10, 15, 0.85);
+      color: #f2e9e4;
+      border: 1px solid #c1440e;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 12px;
+      line-height: 1.6;
+      min-width: 190px;
+    }
+    .scale-wrap { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 4px; }
+    .scale-bar { height: 6px; border: 2px solid #f2e9e4; border-top: none; box-sizing: border-box; }
+    #scale-label { font-weight: bold; }
+    #globe {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 500;
+      display: none;
+      background: #05060a;
+      overflow: hidden;
+    }
+    #globe-msg {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      color: #ff8c5a;
+      font-size: 16px;
+      text-align: center;
+      max-width: 80%;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔴 Mars Map: Jezero Crater</h1>
+    <p>Site: Jezero Crater | Rover: Perseverance</p>
+  </header>
+  <div id="map"></div>
+  <script>
+    const bounds = [[-90, -180], [90, 180]];
+
+    const map = L.map('map', {
+      crs: L.CRS.EPSG4326,
+      minZoom: 1,
+      maxZoom: 13,
+      zoomSnap: 0.25,
+      maxBounds: bounds,
+      maxBoundsViscosity: 1.0
+    });
+    map.fitBounds(bounds);
+
+    const imagery = L.tileLayer(
+      'https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg',
+      { maxNativeZoom: 7, maxZoom: 13, noWrap: true, bounds: bounds, attribution: 'NASA Mars Trek' }
+    ).addTo(map);
+
+    const elevation = L.tileLayer(
+      'https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg',
+      { maxNativeZoom: 6, maxZoom: 13, noWrap: true, bounds: bounds, opacity: 0.7, attribution: 'NASA Mars Trek / MOLA' }
+    );
+
+    const ctx = L.tileLayer(
+      'https://trek.nasa.gov/tiles/Mars/EQ/Jezero_CTX_BlockAdj_dd/1.0.0/default/default028mm/{z}/{y}/{x}.png',
+      { minZoom: 5, maxNativeZoom: 12, maxZoom: 13, noWrap: true, bounds: [[16.5, 75.5], [20.5, 79.5]], attribution: 'NASA Mars Trek / MRO CTX' }
+    ).addTo(map);
+
+    const site = L.marker([18.4446, 77.4509], {
+      icon: L.divIcon({
+        className: '',
+        html: '<div class="mars-pin"></div>',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+      })
+    })
+      .bindPopup(
+        '<b>Site:</b> Jezero Crater<br>' +
+        '<b>Rover:</b> Perseverance<br>' +
+        '<b>Landing date:</b> February 18, 2021<br>' +
+        '<b>Coordinates:</b> 18.44°N, 77.45°E'
+      )
+      .addTo(map);
+
+    const globeBase = L.layerGroup();
+
+    L.control.layers(
+      { 'Surface imagery': imagery, '3D Globe': globeBase },
+      { 'Elevation (MOLA)': elevation, 'Jezero high-res (CTX)': ctx, 'Landing site': site },
+      { collapsed: false }
+    ).addTo(map);
+
+    const MARS_RADIUS = 3389500;
+
+    const info = L.control({ position: 'bottomleft' });
+    info.onAdd = function () {
+      const div = L.DomUtil.create('div', 'map-info');
+      div.innerHTML =
+        '<div class="scale-wrap"><div class="scale-bar" id="scale-bar"></div><span id="scale-label"></span></div>' +
+        '<div id="coords">Lat: --, Lon: --</div>';
+      L.DomEvent.disableClickPropagation(div);
+      return div;
+    };
+    info.addTo(map);
+
+    function niceLength(meters) {
+      const p = Math.pow(10, Math.floor(Math.log10(meters)));
+      const d = meters / p;
+      return (d >= 5 ? 5 : d >= 2 ? 2 : 1) * p;
+    }
+
+    function updateScale() {
+      const lat = map.getCenter().lat;
+      const degPerPx = 360 / (512 * Math.pow(2, map.getZoom()));
+      const metersPerPx = degPerPx * Math.PI / 180 * MARS_RADIUS * Math.cos(lat * Math.PI / 180);
+      const length = niceLength(metersPerPx * 120);
+      document.getElementById('scale-bar').style.width = (length / metersPerPx) + 'px';
+      document.getElementById('scale-label').textContent =
+        length >= 1000 ? (length / 1000) + ' km' : length + ' m';
+    }
+
+    map.on('zoomend moveend', updateScale);
+    updateScale();
+
+    map.on('mousemove', function (e) {
+      document.getElementById('coords').textContent =
+        'Lat: ' + e.latlng.lat.toFixed(5) + '°, Lon: ' + e.latlng.lng.toFixed(5) + '°';
+    });
+    map.on('mouseout', function () {
+      document.getElementById('coords').textContent = 'Lat: --, Lon: --';
+    });
+    // ---------- 3D globe ----------
+    const GLOBE_TILE_URL =
+      'https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg';
+    const GLOBE_ZOOM = 3;
+
+    const globeDiv = document.createElement('div');
+    globeDiv.id = 'globe';
+    globeDiv.innerHTML = '<div id="globe-msg">Loading Mars...</div>';
+    map.getContainer().appendChild(globeDiv);
+    L.DomEvent.disableClickPropagation(globeDiv);
+    L.DomEvent.disableScrollPropagation(globeDiv);
+
+    let globe = null;
+    let globeStarted = false;
+
+    function setGlobeMessage(text) {
+      const msg = document.getElementById('globe-msg');
+      if (msg) msg.textContent = text;
+    }
+
+    function buildMarsTexture(onDone, onFail) {
+      const cols = Math.pow(2, GLOBE_ZOOM + 1);
+      const rows = Math.pow(2, GLOBE_ZOOM);
+      const canvas = document.createElement('canvas');
+      canvas.width = cols * 256;
+      canvas.height = rows * 256;
+      const ctx2d = canvas.getContext('2d');
+      let remaining = cols * rows;
+      let failed = false;
+
+      function finish() {
+        if (failed) return;
+        try {
+          onDone(canvas.toDataURL('image/jpeg', 0.92));
+        } catch (err) {
+          console.warn('Canvas export blocked (CORS):', err);
+          onFail();
+        }
+      }
+
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = function () {
+            ctx2d.drawImage(img, x * 256, y * 256);
+            if (--remaining === 0) finish();
+          };
+          img.onerror = function () {
+            if (!failed) { failed = true; onFail(); }
+          };
+          img.src = GLOBE_TILE_URL
+            .replace('{z}', GLOBE_ZOOM).replace('{y}', y).replace('{x}', x);
+        }
+      }
+    }
+
+    function startGlobe() {
+      globeStarted = true;
+      buildMarsTexture(
+        function (textureUrl) {
+          setGlobeMessage('');
+          globe = Globe()(globeDiv)
+            .width(globeDiv.clientWidth)
+            .height(globeDiv.clientHeight)
+            .backgroundColor('#05060a')
+            .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+            .globeImageUrl(textureUrl)
+            .showAtmosphere(true)
+            .atmosphereColor('#ff8c5a')
+            .atmosphereAltitude(0.12)
+            .pointsData([{ lat: 18.4446, lng: 77.4509 }])
+            .pointColor(function () { return '#ff4d2e'; })
+            .pointAltitude(0.01)
+            .pointRadius(0.35)
+            .ringsData([{ lat: 18.4446, lng: 77.4509 }])
+            .ringColor(function () { return function (t) { return 'rgba(255,77,46,' + (1 - t) + ')'; }; })
+            .ringMaxRadius(4)
+            .ringPropagationSpeed(2)
+            .ringRepeatPeriod(1400);
+          globe.pointOfView({ lat: 18.4446, lng: 77.4509, altitude: 2.2 });
+        },
+        function () {
+          globeStarted = false;
+          setGlobeMessage('Could not load the 3D texture from NASA. Check your internet connection and open the Console (F12) for details.');
+        }
+      );
+    }
+
+    function setGlobeVisible(visible) {
+      globeDiv.style.display = visible ? 'block' : 'none';
+      info.getContainer().style.display = visible ? 'none' : '';
+      if (visible) {
+        if (!globeStarted && !globe) startGlobe();
+        if (globe) {
+          globe.width(globeDiv.clientWidth).height(globeDiv.clientHeight);
+        }
+      }
+    }
+
+    map.on('baselayerchange', function (e) {
+      setGlobeVisible(e.layer === globeBase);
+    });
+
+    window.addEventListener('resize', function () {
+      if (globe && globeDiv.style.display === 'block') {
+        globe.width(globeDiv.clientWidth).height(globeDiv.clientHeight);
+      }
+    });
+  </script>
+</body>
+</html>
