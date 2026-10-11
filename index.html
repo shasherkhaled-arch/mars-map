@@ -106,6 +106,7 @@
       maxBoundsViscosity: 1.0
     });
     map.fitBounds(bounds);
+    map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
 
     const imagery = L.tileLayer(
       'https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg',
@@ -147,6 +148,7 @@
     ).addTo(map);
 
     const MARS_RADIUS = 3389500;
+    let globeActive = false;
 
     const info = L.control({ position: 'bottomleft' });
     info.onAdd = function () {
@@ -165,30 +167,46 @@
       return (d >= 5 ? 5 : d >= 2 ? 2 : 1) * p;
     }
 
-    function updateScale() {
-      const lat = map.getCenter().lat;
-      const degPerPx = 360 / (512 * Math.pow(2, map.getZoom()));
-      const metersPerPx = degPerPx * Math.PI / 180 * MARS_RADIUS * Math.cos(lat * Math.PI / 180);
+    function setScale(metersPerPx) {
       const length = niceLength(metersPerPx * 120);
       document.getElementById('scale-bar').style.width = (length / metersPerPx) + 'px';
       document.getElementById('scale-label').textContent =
         length >= 1000 ? (length / 1000) + ' km' : length + ' m';
     }
 
+    function updateScale() {
+      if (globeActive) return;
+      const lat = map.getCenter().lat;
+      const degPerPx = 360 / (512 * Math.pow(2, map.getZoom()));
+      setScale(degPerPx * Math.PI / 180 * MARS_RADIUS * Math.cos(lat * Math.PI / 180));
+    }
+
     map.on('zoomend moveend', updateScale);
     updateScale();
 
     map.on('mousemove', function (e) {
+      if (globeActive) return;
       document.getElementById('coords').textContent =
         'Lat: ' + e.latlng.lat.toFixed(5) + '°, Lon: ' + e.latlng.lng.toFixed(5) + '°';
     });
     map.on('mouseout', function () {
+      if (globeActive) return;
       document.getElementById('coords').textContent = 'Lat: --, Lon: --';
     });
     // ---------- 3D globe ----------
-    const GLOBE_TILE_URL =
+    const SITE = { lat: 18.4446, lng: 77.4509 };
+    const IMAGERY_TILES =
       'https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg';
-    const GLOBE_ZOOM = 3;
+    const ELEVATION_TILES =
+      'https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg';
+    const CTX_TILES =
+      'https://trek.nasa.gov/tiles/Mars/EQ/Jezero_CTX_BlockAdj_dd/1.0.0/default/default028mm/{z}/{y}/{x}.png';
+    const GLOBE_ZOOM = 4; // Higher-resolution global NASA mosaic for the 3D planet
+    const GLOBE_FOV = 50;
+    const PATCH_ZOOM = 11; // Finer CTX tiles reveal the crater rim and interior features
+    const PATCH_ELEVATION_ZOOM = 6;
+    const PATCH_BOX = { south: 17.45, north: 19.45, west: 76.45, east: 78.45 };
+    const PATCH_TRIGGER_ALTITUDE = 1.0;
 
     const globeDiv = document.createElement('div');
     globeDiv.id = 'globe';
@@ -199,73 +217,349 @@
 
     let globe = null;
     let globeStarted = false;
+    let imageryCanvas = null;
+    let elevationCanvas = null;
+    let composeCanvas = null;
+    let elevationLoading = false;
+
+    let patchMesh = null;
+    let patchRequested = false;
+    let patchBase = null;
+    let patchRegion = null;
+    let patchCompose = null;
+    let patchElevation = null;
+    let patchElevationLoading = false;
 
     function setGlobeMessage(text) {
       const msg = document.getElementById('globe-msg');
       if (msg) msg.textContent = text;
     }
 
-    function buildMarsTexture(onDone, onFail) {
+    function globeSize() {
+      const box = map.getContainer();
+      return { w: box.clientWidth, h: box.clientHeight };
+    }
+
+    // Whole-planet NASA mosaic: use a higher zoom for a more faithful global surface.
+    function loadTileCanvas(template, onDone, onFail) {
       const cols = Math.pow(2, GLOBE_ZOOM + 1);
       const rows = Math.pow(2, GLOBE_ZOOM);
       const canvas = document.createElement('canvas');
       canvas.width = cols * 256;
       canvas.height = rows * 256;
-      const ctx2d = canvas.getContext('2d');
+      const c = canvas.getContext('2d');
       let remaining = cols * rows;
       let failed = false;
-
-      function finish() {
-        if (failed) return;
-        try {
-          onDone(canvas.toDataURL('image/jpeg', 0.92));
-        } catch (err) {
-          console.warn('Canvas export blocked (CORS):', err);
-          onFail();
-        }
-      }
 
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
           const img = new Image();
           img.crossOrigin = 'anonymous';
           img.onload = function () {
-            ctx2d.drawImage(img, x * 256, y * 256);
-            if (--remaining === 0) finish();
+            c.drawImage(img, x * 256, y * 256);
+            if (--remaining === 0 && !failed) onDone(canvas);
           };
           img.onerror = function () {
             if (!failed) { failed = true; onFail(); }
           };
-          img.src = GLOBE_TILE_URL
+          img.src = template
             .replace('{z}', GLOBE_ZOOM).replace('{y}', y).replace('{x}', x);
         }
       }
     }
 
+    // One region of the planet at a chosen zoom. Missing tiles stay transparent.
+    function loadRegion(template, zoom, box, onDone, onFail) {
+      const size = 360 / Math.pow(2, zoom + 1);
+      const x0 = Math.floor((box.west + 180) / size);
+      const x1 = Math.floor((box.east + 180 - 1e-9) / size);
+      const y0 = Math.floor((90 - box.north) / size);
+      const y1 = Math.floor((90 - box.south - 1e-9) / size);
+      const cols = x1 - x0 + 1;
+      const rows = y1 - y0 + 1;
+      const canvas = document.createElement('canvas');
+      canvas.width = cols * 256;
+      canvas.height = rows * 256;
+      const c = canvas.getContext('2d');
+      const region = {
+        west: x0 * size - 180,
+        east: (x1 + 1) * size - 180,
+        north: 90 - y0 * size,
+        south: 90 - (y1 + 1) * size
+      };
+      let remaining = cols * rows;
+      let loaded = 0;
+
+      function oneDone() {
+        if (--remaining === 0) {
+          if (loaded > 0) onDone(canvas, region); else onFail();
+        }
+      }
+
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = function () {
+            c.drawImage(img, (x - x0) * 256, (y - y0) * 256);
+            loaded++;
+            oneDone();
+          };
+          img.onerror = oneDone;
+          img.src = template
+            .replace('{z}', zoom).replace('{y}', y).replace('{x}', x);
+        }
+      }
+    }
+
+    function composeTexture() {
+      if (!composeCanvas) {
+        composeCanvas = document.createElement('canvas');
+        composeCanvas.width = imageryCanvas.width;
+        composeCanvas.height = imageryCanvas.height;
+      }
+      const c = composeCanvas.getContext('2d');
+      c.globalAlpha = 1;
+      c.drawImage(imageryCanvas, 0, 0);
+      if (map.hasLayer(elevation) && elevationCanvas) {
+        c.globalAlpha = 0.7;
+        c.drawImage(elevationCanvas, 0, 0, composeCanvas.width, composeCanvas.height);
+        c.globalAlpha = 1;
+      }
+      return composeCanvas;
+    }
+
+    function refreshGlobeTexture() {
+      if (!globe || !imageryCanvas) return;
+      const canvas = composeTexture();
+      try {
+        const material = globe.globeMaterial();
+        if (material && material.map) {
+          material.map.image = canvas;
+          material.map.needsUpdate = true;
+          return;
+        }
+      } catch (err) {
+        console.warn('Direct texture update failed, reloading texture:', err);
+      }
+      globe.globeImageUrl(canvas.toDataURL('image/jpeg', 0.9));
+    }
+
+    // ----- high-resolution Jezero CTX patch laid over the 3D globe -----
+    function composePatch() {
+      const c = patchCompose.getContext('2d');
+      c.globalCompositeOperation = 'source-over';
+      c.globalAlpha = 1;
+      c.clearRect(0, 0, patchCompose.width, patchCompose.height);
+      c.drawImage(patchBase, 0, 0);
+      if (map.hasLayer(elevation) && patchElevation) {
+        const r = patchElevation.region;
+        const p = patchRegion;
+        const sx = patchCompose.width / (p.east - p.west);
+        const sy = patchCompose.height / (p.north - p.south);
+        c.globalCompositeOperation = 'source-atop';
+        c.globalAlpha = 0.7;
+        c.drawImage(
+          patchElevation.canvas,
+          (r.west - p.west) * sx, (p.north - r.north) * sy,
+          (r.east - r.west) * sx, (r.north - r.south) * sy
+        );
+        c.globalAlpha = 1;
+        c.globalCompositeOperation = 'source-over';
+      }
+      return patchCompose;
+    }
+
+    function refreshPatchTexture() {
+      if (!patchMesh || !patchBase) return;
+      patchMesh.material.map.image = composePatch();
+      patchMesh.material.map.needsUpdate = true;
+    }
+
+    function findGlobeMesh() {
+      let found = null;
+      const material = globe.globeMaterial();
+      globe.scene().traverse(function (o) {
+        if (!found && o.isMesh && o.material === material) found = o;
+      });
+      return found;
+    }
+
+    function createPatch() {
+      const globeMesh = findGlobeMesh();
+      if (!globeMesh || !globeMesh.geometry.parameters) return false;
+      const baseMaterial = globe.globeMaterial();
+      if (!baseMaterial.map) return false;
+      const rad = Math.PI / 180;
+      const geometry = new globeMesh.geometry.constructor(
+        globeMesh.geometry.parameters.radius * 1.0008, 128, 128,
+        (patchRegion.west + 180) * rad, (patchRegion.east - patchRegion.west) * rad,
+        (90 - patchRegion.north) * rad, (patchRegion.north - patchRegion.south) * rad
+      );
+      const texture = new baseMaterial.map.constructor(composePatch());
+      if ('colorSpace' in baseMaterial.map) texture.colorSpace = baseMaterial.map.colorSpace;
+      texture.needsUpdate = true;
+      const material = baseMaterial.clone();
+      material.map = texture;
+      material.transparent = true;
+      material.polygonOffset = true;
+      material.polygonOffsetFactor = -2;
+      material.polygonOffsetUnits = -2;
+      patchMesh = new globeMesh.constructor(geometry, material);
+      globeMesh.parent.add(patchMesh);
+      patchMesh.visible = map.hasLayer(ctx);
+      return true;
+    }
+
+    function syncPatchElevation() {
+      if (!patchMesh) return;
+      if (map.hasLayer(elevation) && !patchElevation) {
+        if (patchElevationLoading) return;
+        patchElevationLoading = true;
+        loadRegion(
+          ELEVATION_TILES, PATCH_ELEVATION_ZOOM, PATCH_BOX,
+          function (canvas, region) {
+            patchElevation = { canvas: canvas, region: region };
+            patchElevationLoading = false;
+            refreshPatchTexture();
+          },
+          function () { patchElevationLoading = false; }
+        );
+        return;
+      }
+      refreshPatchTexture();
+    }
+
+    function ensurePatch() {
+      if (patchRequested || !globe) return;
+      patchRequested = true;
+      setGlobeMessage('Loading high-res Jezero imagery...');
+      loadRegion(
+        CTX_TILES, PATCH_ZOOM, PATCH_BOX,
+        function (canvas, region) {
+          setGlobeMessage('');
+          patchBase = canvas;
+          patchRegion = region;
+          patchCompose = document.createElement('canvas');
+          patchCompose.width = canvas.width;
+          patchCompose.height = canvas.height;
+          if (!createPatch()) {
+            console.warn('Could not add the high-res patch to the globe.');
+            return;
+          }
+          syncPatchElevation();
+        },
+        function () {
+          setGlobeMessage('');
+          console.warn('Could not load the high-res Jezero imagery.');
+        }
+      );
+    }
+
+    function maybeLoadPatch() {
+      if (!globe || !globeActive || patchRequested || !map.hasLayer(ctx)) return;
+      if (globe.pointOfView().altitude < PATCH_TRIGGER_ALTITUDE) ensurePatch();
+    }
+
+    function syncPatchVisibility() {
+      if (patchMesh) patchMesh.visible = map.hasLayer(ctx);
+    }
+
+    // ----- layer / scale sync -----
+    function syncGlobeElevation() {
+      if (!globe) return;
+      if (map.hasLayer(elevation) && !elevationCanvas) {
+        if (!elevationLoading) {
+          elevationLoading = true;
+          loadTileCanvas(
+            ELEVATION_TILES,
+            function (canvas) {
+              elevationCanvas = canvas;
+              elevationLoading = false;
+              refreshGlobeTexture();
+            },
+            function () {
+              elevationLoading = false;
+              console.warn('Could not load the elevation texture for the globe.');
+            }
+          );
+        }
+      } else {
+        refreshGlobeTexture();
+      }
+      syncPatchElevation();
+    }
+
+    function syncGlobeSite() {
+      if (!globe) return;
+      const visible = map.hasLayer(site);
+      globe.pointsData(visible ? [SITE] : []);
+      globe.ringsData(visible ? [SITE] : []);
+    }
+
+    function updateGlobeScale() {
+      if (!globe || !globeActive) return;
+      const pov = globe.pointOfView();
+      const distance = Math.max(pov.altitude, 0.001) * MARS_RADIUS;
+      const height = Math.max(globeSize().h, 1);
+      setScale(2 * distance * Math.tan(GLOBE_FOV * Math.PI / 360) / height);
+    }
+
     function startGlobe() {
       globeStarted = true;
-      buildMarsTexture(
-        function (textureUrl) {
+      loadTileCanvas(
+        IMAGERY_TILES,
+        function (canvas) {
+          imageryCanvas = canvas;
+          let textureUrl;
+          try {
+            textureUrl = composeTexture().toDataURL('image/jpeg', 0.92);
+          } catch (err) {
+            console.warn('Canvas export blocked (CORS):', err);
+            globeStarted = false;
+            setGlobeMessage('Could not read the NASA images for the 3D view. Open the Console (F12) for details.');
+            return;
+          }
           setGlobeMessage('');
+          const size = globeSize();
           globe = Globe()(globeDiv)
-            .width(globeDiv.clientWidth)
-            .height(globeDiv.clientHeight)
+            .width(size.w)
+            .height(size.h)
             .backgroundColor('#05060a')
             .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
             .globeImageUrl(textureUrl)
             .showAtmosphere(true)
             .atmosphereColor('#ff8c5a')
             .atmosphereAltitude(0.12)
-            .pointsData([{ lat: 18.4446, lng: 77.4509 }])
             .pointColor(function () { return '#ff4d2e'; })
             .pointAltitude(0.01)
             .pointRadius(0.35)
-            .ringsData([{ lat: 18.4446, lng: 77.4509 }])
             .ringColor(function () { return function (t) { return 'rgba(255,77,46,' + (1 - t) + ')'; }; })
             .ringMaxRadius(4)
             .ringPropagationSpeed(2)
             .ringRepeatPeriod(1400);
-          globe.pointOfView({ lat: 18.4446, lng: 77.4509, altitude: 2.2 });
+          globe.pointOfView({ lat: SITE.lat, lng: SITE.lng, altitude: 2.2 });
+
+          globe.controls().addEventListener('change', function () {
+            updateGlobeScale();
+            maybeLoadPatch();
+          });
+          globeDiv.addEventListener('mousemove', function (e) {
+            if (!globeActive || typeof globe.toGlobeCoords !== 'function') return;
+            const rect = globeDiv.getBoundingClientRect();
+            const pos = globe.toGlobeCoords(e.clientX - rect.left, e.clientY - rect.top);
+            document.getElementById('coords').textContent = pos
+              ? 'Lat: ' + pos.lat.toFixed(5) + '°, Lon: ' + pos.lng.toFixed(5) + '°'
+              : 'Lat: --, Lon: --';
+          });
+          globeDiv.addEventListener('mouseleave', function () {
+            document.getElementById('coords').textContent = 'Lat: --, Lon: --';
+          });
+
+          syncGlobeSite();
+          syncGlobeElevation();
+          updateGlobeScale();
+          maybeLoadPatch();
         },
         function () {
           globeStarted = false;
@@ -275,13 +569,23 @@
     }
 
     function setGlobeVisible(visible) {
+      globeActive = visible;
       globeDiv.style.display = visible ? 'block' : 'none';
-      info.getContainer().style.display = visible ? 'none' : '';
-      if (visible) {
-        if (!globeStarted && !globe) startGlobe();
-        if (globe) {
-          globe.width(globeDiv.clientWidth).height(globeDiv.clientHeight);
-        }
+      document.getElementById('coords').textContent = 'Lat: --, Lon: --';
+      if (!visible) {
+        updateScale();
+        return;
+      }
+      if (!globeStarted && !globe) {
+        startGlobe();
+      } else if (globe) {
+        const size = globeSize();
+        globe.width(size.w).height(size.h);
+        syncGlobeSite();
+        syncGlobeElevation();
+        syncPatchVisibility();
+        updateGlobeScale();
+        maybeLoadPatch();
       }
     }
 
@@ -289,9 +593,21 @@
       setGlobeVisible(e.layer === globeBase);
     });
 
+    map.on('overlayadd overlayremove', function (e) {
+      if (!globeActive) return;
+      if (e.layer === elevation) syncGlobeElevation();
+      if (e.layer === site) syncGlobeSite();
+      if (e.layer === ctx) {
+        syncPatchVisibility();
+        maybeLoadPatch();
+      }
+    });
+
     window.addEventListener('resize', function () {
-      if (globe && globeDiv.style.display === 'block') {
-        globe.width(globeDiv.clientWidth).height(globeDiv.clientHeight);
+      if (globe && globeActive) {
+        const size = globeSize();
+        globe.width(size.w).height(size.h);
+        updateGlobeScale();
       }
     });
   </script>
