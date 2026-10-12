@@ -62,6 +62,14 @@
       border-radius: 50%;
       box-shadow: 0 0 0 4px rgba(77, 210, 255, 0.35), 0 0 14px #4dd2ff;
     }
+    .start-pin {
+      width: 18px;
+      height: 18px;
+      background: #7cfc8a;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 0 4px rgba(124, 252, 138, 0.35), 0 0 14px #7cfc8a;
+    }
     .map-info {
       background: rgba(9, 10, 15, 0.85);
       color: #f2e9e4;
@@ -104,10 +112,11 @@
       padding: 8px 10px;
       font-size: 12px;
       line-height: 1.6;
-      width: 220px;
+      width: 240px;
     }
     .route-panel .route-title { font-weight: bold; color: #ff8c5a; margin-bottom: 6px; font-size: 13px; }
     .route-panel .btn-row { display: flex; gap: 6px; }
+    .route-panel .btn-row + .btn-row { margin-top: 6px; }
     .route-panel button {
       flex: 1;
       background: #14192b;
@@ -137,6 +146,24 @@
     #route-info b { color: #4dd2ff; }
     #map.picking, #map.picking .leaflet-interactive, #map.picking .leaflet-grab { cursor: crosshair; }
     #globe.picking, #globe.picking canvas { cursor: crosshair !important; }
+
+    /* ---------- geologic unit names ---------- */
+    .unit-icon { pointer-events: none; }
+    .unit-label {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      white-space: nowrap;
+      text-align: center;
+      font: bold 13px Tahoma, Arial, sans-serif;
+      color: #fff;
+      padding: 1px 6px 1px 8px;
+      border-left: 3px solid var(--c, #fff);
+      border-radius: 2px;
+      background: rgba(9, 10, 15, 0.35);
+      text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 2px #000;
+    }
+    .unit-label small { display: block; font-weight: normal; font-size: 11px; }
+    .hide-units .unit-label { display: none; }
 
     /* ---------- elevation legend ---------- */
     .legend {
@@ -210,11 +237,14 @@
     // Route (destination marker + path) lives in its own layer group.
     const routeGroup = L.layerGroup().addTo(map);
 
+    // Names of the geological units around the crater (filled in below).
+    const unitLabels = L.layerGroup().addTo(map);
+
     const globeBase = L.layerGroup();
 
     L.control.layers(
       { 'Surface imagery': imagery, '3D Globe': globeBase },
-      { 'Elevation (MOLA)': elevation, 'Jezero high-res (CTX)': ctx, 'Landing site': site, 'Route': routeGroup },
+      { 'Elevation (MOLA)': elevation, 'Jezero high-res (CTX)': ctx, 'Landing site': site, 'Geologic units (names)': unitLabels, 'Route': routeGroup },
       { collapsed: false }
     ).addTo(map);
 
@@ -331,6 +361,7 @@
     const DETAIL_DELAY = 350;
 
     const ROUTE_COLOR = '#4dd2ff';
+    const START_COLOR = '#7cfc8a';
 
     const globeDiv = document.createElement('div');
     globeDiv.id = 'globe';
@@ -361,7 +392,8 @@
     // route state
     let dest = null;        // { lat, lng }
     let route = null;       // { pts, distance, bearing }
-    let pickMode = false;
+    let pickMode = null;      // null | 'start' | 'dest'
+    let start = { lat: SITE.lat, lng: SITE.lng, custom: false };  // route origin, defaults to Jezero
 
     function setGlobeMessage(text) {
       const msg = document.getElementById('globe-msg');
@@ -752,6 +784,9 @@
       const visible = map.hasLayer(site);
       const points = [];
       if (visible) points.push(SITE);
+      if (start.custom && map.hasLayer(routeGroup)) {
+        points.push({ lat: start.lat, lng: start.lng, color: START_COLOR });
+      }
       if (dest && map.hasLayer(routeGroup)) {
         points.push({ lat: dest.lat, lng: dest.lng, color: ROUTE_COLOR });
       }
@@ -816,8 +851,16 @@
             .pathColor(function () { return ROUTE_COLOR; })
             .pathStroke(function (d) { return d.stroke; })
             .pathTransitionDuration(0)
+            .labelLat('lat')
+            .labelLng('lng')
+            .labelText(function (d) { return d.name; })
+            .labelSize(0.07)
+            .labelColor(function () { return 'rgba(255,255,255,0.95)'; })
+            .labelAltitude(0.012)
+            .labelResolution(2)
+            .labelIncludeDot(false)
             .onGlobeClick(function (coords) {
-              if (pickMode && coords) setDestination(coords.lat, coords.lng);
+              if (pickMode && coords) setPoint(coords.lat, coords.lng);
             });
           globe.pointOfView({ lat: SITE.lat, lng: SITE.lng, altitude: 2.2 });
 
@@ -825,6 +868,7 @@
             updateGlobeScale();
             maybeLoadPatch();
             scheduleDetail();
+            syncGlobeLabels();
           });
           globeDiv.addEventListener('mousemove', function (e) {
             if (!globeActive || typeof globe.toGlobeCoords !== 'function') return;
@@ -839,6 +883,7 @@
           });
 
           syncGlobeRoute();
+          syncGlobeLabels();
           syncGlobeElevation();
           updateGlobeScale();
           maybeLoadPatch();
@@ -864,6 +909,7 @@
         const size = globeSize();
         globe.width(size.w).height(size.h);
         syncGlobeRoute();
+        syncGlobeLabels();
         syncGlobeElevation();
         syncPatchVisibility();
         updateGlobeScale();
@@ -880,6 +926,7 @@
       if (e.layer === elevation) syncGlobeElevation();
       if (e.layer === site) syncGlobeSite();
       if (e.layer === routeGroup) syncGlobeRoute();
+      if (e.layer === unitLabels) syncGlobeLabels();
       if (e.layer === ctx) {
         syncPatchVisibility();
         maybeLoadPatch();
@@ -894,6 +941,65 @@
         scheduleDetail();
       }
     });
+
+    // ---------- Geologic unit names ----------
+    // Label positions were read off the NASA/JPL geologic map of Jezero (PIA23976):
+    // pixel offsets from the centre of the green landing ellipse, converted with the
+    // map's scale bar (66 px per km) and anchored at the landing site. They are
+    // approximate (roughly +/- 1 km); edit `px` below to nudge a label.
+    const UNIT_PX_PER_KM = 66;
+    const UNIT_CENTER_PX = [996, 576];
+    const UNIT_MIN_ZOOM = 8;                 // 2D map: hide names when zoomed out
+    const UNIT_GLOBE_MAX_ALTITUDE = 0.12;    // globe: show names only when close
+
+    const JEZERO_UNITS = [
+      { name: 'Outside Jezero', sub: '(Midway/NES)', px: [100, 436], color: '#9fe870' },
+      { name: 'Crater Rim', px: [311, 1036], color: '#c9a6ff' },
+      { name: 'Marginal Deposits', px: [747, 1018], color: '#8fa4ff' },
+      { name: 'Delta', px: [789, 442], color: '#8ff0e0' },
+      { name: 'Crater Floor', px: [1186, 773], color: '#ffa38f' }
+    ];
+
+    function unitPosition(px) {
+      const east = (px[0] - UNIT_CENTER_PX[0]) / UNIT_PX_PER_KM;
+      const north = (UNIT_CENTER_PX[1] - px[1]) / UNIT_PX_PER_KM;
+      const kmPerDeg = MARS_RADIUS * Math.PI / 180 / 1000;
+      return {
+        lat: SITE.lat + north / kmPerDeg,
+        lng: SITE.lng + east / (kmPerDeg * Math.cos(SITE.lat * Math.PI / 180))
+      };
+    }
+
+    JEZERO_UNITS.forEach(function (u) {
+      const p = unitPosition(u.px);
+      u.lat = p.lat;
+      u.lng = p.lng;
+      L.marker([u.lat, u.lng], {
+        icon: L.divIcon({
+          className: 'unit-icon',
+          html: '<div class="unit-label" style="--c:' + u.color + '">' + u.name +
+                (u.sub ? '<small>' + u.sub + '</small>' : '') + '</div>',
+          iconSize: [0, 0]
+        }),
+        interactive: false,
+        keyboard: false
+      }).addTo(unitLabels);
+    });
+
+    function syncUnitZoom() {
+      map.getContainer().classList.toggle('hide-units', map.getZoom() < UNIT_MIN_ZOOM);
+    }
+    map.on('zoomend', syncUnitZoom);
+    syncUnitZoom();
+
+    let globeLabelsOn = null;
+    function syncGlobeLabels() {
+      if (!globe) return;
+      const show = map.hasLayer(unitLabels) && globe.pointOfView().altitude < UNIT_GLOBE_MAX_ALTITUDE;
+      if (show === globeLabelsOn) return;
+      globeLabelsOn = show;
+      globe.labelsData(show ? JEZERO_UNITS : []);
+    }
 
     // ---------- Route planner ----------
     const DEG = Math.PI / 180;
@@ -972,10 +1078,11 @@
       div.innerHTML =
         '<div class="route-title">🧑‍🚀 Route planner</div>' +
         '<div class="btn-row">' +
-          '<button id="pick-btn" type="button">📍 Pick destination</button>' +
-          '<button id="clear-btn" type="button">✖ Clear</button>' +
+          '<button id="pick-start-btn" type="button">🟢 Pick start</button>' +
+          '<button id="pick-dest-btn" type="button">📍 Pick destination</button>' +
         '</div>' +
-        '<div class="hint" id="route-hint">Press “Pick destination”, then click any point on the map or the globe.</div>' +
+        '<div class="btn-row"><button id="clear-btn" type="button">✖ Clear (start back to Jezero)</button></div>' +
+        '<div class="hint" id="route-hint">The start is Jezero by default. Press “Pick start” to move it, and “Pick destination”, then click any point on the map or the globe.</div>' +
         '<div class="speed-row"><label for="speed">Speed</label>' +
           '<input id="speed" type="number" min="0.1" step="0.5" value="10"> <span>km/h</span></div>' +
         '<div class="speed-row" title="0 = shortest path, higher = detour more to avoid steep ground and climbs">' +
@@ -988,13 +1095,17 @@
     };
     panel.addTo(map);
 
-    function setPickMode(on) {
-      pickMode = on;
-      document.getElementById('pick-btn').classList.toggle('active', on);
-      document.getElementById('pick-btn').textContent = on ? '🎯 Click on the map…' : '📍 Pick destination';
-      map.getContainer().classList.toggle('picking', on);
-      globeDiv.classList.toggle('picking', on);
-      if (on && !map.hasLayer(routeGroup)) routeGroup.addTo(map);
+    function setPickMode(mode) {
+      pickMode = mode;
+      const startBtn = document.getElementById('pick-start-btn');
+      const destBtn = document.getElementById('pick-dest-btn');
+      startBtn.classList.toggle('active', mode === 'start');
+      destBtn.classList.toggle('active', mode === 'dest');
+      startBtn.textContent = mode === 'start' ? '🎯 Click on the map…' : '🟢 Pick start';
+      destBtn.textContent = mode === 'dest' ? '🎯 Click on the map…' : '📍 Pick destination';
+      map.getContainer().classList.toggle('picking', !!mode);
+      globeDiv.classList.toggle('picking', !!mode);
+      if (mode && !map.hasLayer(routeGroup)) routeGroup.addTo(map);
     }
 
     // ---------- Terrain-aware planning ----------
@@ -1335,13 +1446,13 @@
         route = straightRoute(straight);
         routeStatus = '';
       } else {
-        const sol = solveRoute(grid, SITE, dest, avoidStrength());
+        const sol = solveRoute(grid, start, dest, avoidStrength());
         if (!sol || sol.pts.length < 2) {
           route = straightRoute(straight);
           routeStatus = 'No terrain route found, showing the straight line.';
         } else {
           const raw = sol.pts.slice();
-          raw[0] = [SITE.lat, SITE.lng];
+          raw[0] = [start.lat, start.lng];
           raw[raw.length - 1] = [dest.lat, dest.lng];
           const pts = chaikin(raw, 2);
           const st = profileStats(sol.elev);
@@ -1360,17 +1471,21 @@
       renderRoute();
     }
 
+    function planKey() {
+      return [start.lat, start.lng, dest.lat, dest.lng].map(function (v) { return v.toFixed(5); }).join(',');
+    }
+
     function planRoute() {
       const job = ++planJob;
-      const straight = geodesic(SITE, dest);
-      const key = dest.lat.toFixed(5) + ',' + dest.lng.toFixed(5);
+      const straight = geodesic(start, dest);
+      const key = planKey();
       if (terrainCache && terrainCache.key === key) {
         finishPlan(job, straight, terrainCache.grid);
         return;
       }
       routeStatus = 'Planning a route over the terrain…';
       updateRouteInfo();
-      const box = planBox(SITE, dest);
+      const box = planBox(start, dest);
       let z = ELEVATION_MAX_ZOOM;
       while (z > MIN_ELEV_ZOOM) {
         const tile = 360 / Math.pow(2, z + 1);
@@ -1404,7 +1519,7 @@
       const box = document.getElementById('route-info');
       if (!dest) { box.style.display = 'none'; box.innerHTML = ''; return; }
       let html =
-        '<div>From: <b>Jezero (landing site)</b></div>' +
+        '<div>From: <b>' + (start.custom ? fmtCoord(start.lat, start.lng) : 'Jezero (landing site)') + '</b></div>' +
         '<div>To: <b>' + fmtCoord(dest.lat, dest.lng) + '</b></div>';
       if (route) {
         const speed = Math.max(parseFloat(document.getElementById('speed').value) || 10, 0.1);
@@ -1431,6 +1546,18 @@
     // Rebuild everything drawn for the route (markers, direct line, terrain route).
     function renderRoute() {
       routeGroup.clearLayers();
+      if (start.custom) {
+        L.marker([start.lat, start.lng], {
+          icon: L.divIcon({
+            className: '',
+            html: '<div class="start-pin"></div>',
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+          })
+        })
+          .bindPopup('<b>Start (landing point)</b><br><b>Coordinates:</b> ' + fmtCoord(start.lat, start.lng))
+          .addTo(routeGroup);
+      }
       if (dest) {
         if (route && route.terrain && route.straight) {
           L.polyline(splitAtAntimeridian(route.straight.pts), {
@@ -1461,6 +1588,23 @@
       syncGlobeRoute();
     }
 
+    function setStart(lat, lng) {
+      start = {
+        lat: Math.max(-90, Math.min(90, lat)),
+        lng: Math.max(-180, Math.min(180, lng)),
+        custom: true
+      };
+      route = null;
+      routeStatus = '';
+      setPickMode(null);
+      renderRoute();
+      if (dest) planRoute();
+    }
+
+    function setPoint(lat, lng) {
+      if (pickMode === 'start') setStart(lat, lng); else setDestination(lat, lng);
+    }
+
     function setDestination(lat, lng) {
       dest = {
         lat: Math.max(-90, Math.min(90, lat)),
@@ -1468,7 +1612,7 @@
       };
       route = null;
       routeStatus = '';
-      setPickMode(false);
+      setPickMode(null);
       document.getElementById('route-hint').style.display = 'none';
       renderRoute();
       planRoute();
@@ -1477,27 +1621,31 @@
     function clearRoute() {
       planJob++;
       dest = null;
+      start = { lat: SITE.lat, lng: SITE.lng, custom: false };
       route = null;
       routeStatus = '';
-      setPickMode(false);
+      setPickMode(null);
       document.getElementById('route-hint').style.display = 'block';
       renderRoute();
     }
 
-    document.getElementById('pick-btn').addEventListener('click', function () {
-      setPickMode(!pickMode);
+    document.getElementById('pick-start-btn').addEventListener('click', function () {
+      setPickMode(pickMode === 'start' ? null : 'start');
+    });
+    document.getElementById('pick-dest-btn').addEventListener('click', function () {
+      setPickMode(pickMode === 'dest' ? null : 'dest');
     });
     document.getElementById('clear-btn').addEventListener('click', clearRoute);
     document.getElementById('speed').addEventListener('input', updateRouteInfo);
     document.getElementById('avoid').addEventListener('input', function () {
-      if (!dest || !terrainCache) return;
+      if (!dest || !terrainCache || terrainCache.key !== planKey()) return;
       const job = ++planJob;
-      finishPlan(job, geodesic(SITE, dest), terrainCache.grid);
+      finishPlan(job, geodesic(start, dest), terrainCache.grid);
     });
 
     map.on('click', function (e) {
       if (!pickMode || globeActive) return;
-      setDestination(e.latlng.lat, e.latlng.lng);
+      setPoint(e.latlng.lat, e.latlng.lng);
     });
   </script>
 </body>
