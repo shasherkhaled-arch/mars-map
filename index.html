@@ -184,6 +184,21 @@
     .legend .foot { margin-top: 6px; color: #8d97aa; font-size: 11px; }
     .legend .ramp { height: 12px; width: 100%; border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 2px; box-sizing: border-box; }
     .legend .ramp-labels { display: flex; justify-content: space-between; font-size: 11px; color: #b8c1d1; margin-top: 2px; }
+
+    /* ---------- coordinate inputs + site popups ---------- */
+    #side input[type=text], #side select {
+      flex: 1; min-width: 0; width: 100%; box-sizing: border-box;
+      background: #14192b; color: #f2e9e4; border: 1px solid #c1440e;
+      border-radius: 4px; padding: 5px 6px; font: inherit;
+    }
+    #side .coord-row button { flex: none; padding: 6px 12px; }
+    #side #coord-msg { color: #ff8c5a; }
+    #side .coord-box { margin-top: 8px; border-top: 1px solid rgba(193, 68, 14, 0.5); padding-top: 4px; }
+    .popup-btns button {
+      background: #c1440e; color: #fff; border: 0; border-radius: 3px;
+      padding: 3px 8px; margin: 6px 6px 0 0; cursor: pointer; font: inherit; font-size: 12px;
+    }
+    .popup-btns button:hover { background: #e0542c; }
   </style>
 </head>
 <body>
@@ -241,7 +256,32 @@
         </div>
       </details>
 
-      <details>
+      <details open>
+        <summary>🛰 Mission sites &amp; routes</summary>
+        <div class="body">
+          <div id="sites-box"></div>
+          <div class="muted">Positions are approximate (±1 km), based on NASA's route maps PIA24596 / PIA25173.</div>
+        </div>
+      </details>
+
+      <details open>
+        <summary>🧪 Séítah minerals (PIA25024)</summary>
+        <div class="body">
+          <label class="chk"><input type="checkbox" data-sl="minerals"><span>Mineral map (olivine / pyroxene)</span></label>
+          <label class="chk"><input type="checkbox" data-sl="terrain"><span>Route map (first campaign)</span></label>
+          <label class="slide">Opacity <input id="op-seitah" type="range" min="10" max="100" value="80"></label>
+          <div class="sub">Align to the map</div>
+          <div class="slide">East km <input id="sa-e" type="number" step="0.1"></div>
+          <div class="slide">North km <input id="sa-n" type="number" step="0.1"></div>
+          <div class="slide">Width km <input id="sa-w" type="number" step="0.1" min="0.5"></div>
+          <button id="sa-go" class="full" type="button">🔍 Zoom to Séítah layer</button>
+          <div class="muted">NASA's picture is not georeferenced, so its position is a first guess: move it with the numbers above (km from the landing site), then copy the values into <code>SEITAH</code> in the code. Shown on the flat map only.</div>
+          <div class="sub">About this layer</div>
+          <div class="muted" style="margin-top:2px">Two views of the “Séítah” geologic unit. The <b>route map</b> shows terrain with the rover's route during its first science campaign: “Artuby” is a ridgeline along part of Séítah's southern boundary, and “Dourbes” is an abrading target on a rock in South Séítah. The <b>mineral map</b> shows the diversity of igneous minerals (solidified from lava or magma): olivine in red, calcium-poor pyroxene in green, calcium-rich pyroxene in blue.<br>Credit: NASA/JPL-Caltech/CRISM/CTX/HRSC/MSSS/USGS · <a href="https://science.nasa.gov/resource/diversity-of-seitah-minerals/" target="_blank" rel="noopener" style="color:#ff8c5a">source</a></div>
+        </div>
+      </details>
+
+      <details id="route-details">
         <summary>🧑‍🚀 Route planner</summary>
         <div class="body">
           <label class="chk"><input type="checkbox" data-layer="routeGroup"><span>Show route on the map</span></label>
@@ -250,7 +290,27 @@
             <button id="pick-dest-btn" type="button">📍 Pick destination</button>
           </div>
           <div class="btn-row"><button id="clear-btn" type="button">✖ Clear (start back to Jezero)</button></div>
-          <div class="hint" id="route-hint">The start is Jezero by default. Press “Pick start” to move it, or “Pick destination”, then click any point on the map or the globe.</div>
+          <div class="coord-box">
+            <div class="sub">Start (lat, lon)</div>
+            <div class="btn-row coord-row">
+              <input id="start-coord" type="text" placeholder="18.4446, 77.4509" autocomplete="off">
+              <button id="start-coord-btn" type="button">Set</button>
+            </div>
+            <div class="sub">Destination (lat, lon)</div>
+            <div class="btn-row coord-row">
+              <input id="dest-coord" type="text" placeholder="18.46, 77.40  or  18.46N 77.40E" autocomplete="off">
+              <button id="dest-coord-btn" type="button">Set</button>
+            </div>
+            <div class="hint" id="coord-msg"></div>
+            <div class="sub">Or choose a named site</div>
+            <select id="site-select"></select>
+            <div class="btn-row" style="margin-top:6px">
+              <button id="site-go-btn" type="button">🔍 Go</button>
+              <button id="site-start-btn" type="button">🟢 Start</button>
+              <button id="site-dest-btn" type="button">📍 Dest.</button>
+            </div>
+          </div>
+          <div class="hint" id="route-hint">The start is Jezero by default. Press “Pick start” to move it, or “Pick destination”, then click any point on the map or the globe, or type coordinates below.</div>
           <div class="speed-row"><label for="speed">Speed</label>
             <input id="speed" type="number" min="0.1" step="0.5" value="10"> <span>km/h</span></div>
           <div class="speed-row" title="0 = shortest path, higher = detour more to avoid steep ground and climbs">
@@ -611,12 +671,31 @@
         '<div class="foot">' + foot + '</div></div>';
     }
 
+    // Séítah mineral layers (filled in near the end of the script).
+    const SEITAH_STATE = { minerals: null, terrain: null };
+
+    function seitahLegendHtml() {
+      if (!SEITAH_STATE.minerals || !map.hasLayer(SEITAH_STATE.minerals)) return '';
+      const rows = [
+        ['#ff0000', 'Olivine'],
+        ['#00c000', 'Calcium-poor pyroxene'],
+        ['#1e50ff', 'Calcium-rich pyroxene']
+      ];
+      let html = '<div class="legend"><div class="legend-title">Séítah igneous minerals</div>';
+      rows.forEach(function (r) {
+        html += '<div class="row"><span class="swatch" style="background:' + r[0] + '"></span>' +
+          '<span class="note">' + r[1] + '</span></div>';
+      });
+      return html + '<div class="foot">Colours as described by NASA (PIA25024).</div></div>';
+    }
+
     function renderLegends() {
       let html = '';
       if (map.hasLayer(elevation)) html += elevationLegendHtml();
       html += thermalLegendHtml();
+      html += seitahLegendHtml();
       document.getElementById('legend-box').innerHTML = html ||
-        '<div class="muted">Turn on “Elevation colours” or a temperature layer to see its legend here.</div>';
+        '<div class="muted">Turn on “Elevation colours”, a temperature layer or the Séítah minerals to see a legend here.</div>';
     }
 
     document.getElementById('op-thermal').addEventListener('input', function (e) {
@@ -1399,9 +1478,12 @@
       L.circleMarker([p.lat, p.lng], {
         radius: named ? 5 : 4, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1
       })
-        .bindPopup('<b>' + p.name + (p.sub ? ' ' + p.sub : '') + '</b><br>' + p.info +
-                   '<br><b>Coordinates:</b> ' + fmtCoord(p.lat, p.lng) +
-                   '<br><span style="opacity:.7">Approximate position (from NASA photo PIA24814)</span>')
+        .bindPopup(function () {
+          return '<b>' + p.name + (p.sub ? ' ' + p.sub : '') + '</b><br>' + p.info +
+                 '<br><b>Coordinates:</b> ' + fmtCoord(p.lat, p.lng) +
+                 '<br><span style="opacity:.7">Approximate position (from NASA photo PIA24814)</span>' +
+                 siteButtons(p.idx);
+        })
         .addTo(group);
       L.marker([p.lat, p.lng], {
         icon: L.divIcon({
@@ -1521,16 +1603,23 @@
 
     renderLegends();
 
+    // Names shown on the globe (units, HiRISE places and the mission-site layers).
+    function activeSiteItems() {
+      let out = [];
+      SITE_GROUPS.forEach(function (g) { if (map.hasLayer(g.group)) out = out.concat(g.items); });
+      return out;
+    }
     let globeLabelsKey = null;
     function syncGlobeLabels() {
       if (!globe) return;
       const near = globe.pointOfView().altitude < UNIT_GLOBE_MAX_ALTITUDE;
       const u = near && map.hasLayer(unitLabels);
       const p = near && map.hasLayer(poiLayer);
-      const key = (u ? '1' : '0') + (p ? '1' : '0');
+      const sites = near ? activeSiteItems() : [];
+      const key = (u ? '1' : '0') + (p ? '1' : '0') + sites.map(function (s) { return s.idx; }).join('.');
       if (key === globeLabelsKey) return;
       globeLabelsKey = key;
-      globe.labelsData((u ? JEZERO_UNITS : []).concat(p ? PIA_POINTS : []));
+      globe.labelsData((u ? JEZERO_UNITS : []).concat(p ? PIA_POINTS : []).concat(sites));
     }
 
     // ---------- Route planner ----------
@@ -2093,6 +2182,7 @@
           )
           .addTo(routeGroup);
       }
+      syncCoordInputs();
       updateRouteInfo();
       syncGlobeRoute();
     }
@@ -2150,6 +2240,316 @@
       if (!dest || !terrainCache || terrainCache.key !== planKey()) return;
       const job = ++planJob;
       finishPlan(job, geodesic(start, dest), terrainCache.grid);
+    });
+
+    // =====================================================================
+    // Mission sites (layers) + coordinate input for the route planner
+    // =====================================================================
+    // e / n = km east / north of the landing site. These are APPROXIMATE (about ±1 km),
+    // taken from the names on NASA's route maps (PIA24596, PIA25173), not read pixel by
+    // pixel. Edit e / n to correct a position.
+    const SITE_GROUPS = [
+      { id: 'c1', title: 'Campaign 1 · Crater Floor', color: '#ffa38f', items: [
+        { name: 'Séítah', e: -1.4, n: -0.9,
+          info: 'Unit whose Navajo name means "amidst the sand"; potentially some of the oldest accessible rocks in Jezero.' },
+        { name: 'Artuby', e: -0.9, n: -1.3,
+          info: 'Ridgeline running along part of the southern boundary of Séítah.' },
+        { name: 'Dourbes', e: -1.7, n: -1.5,
+          info: 'Abrading target on a rock in South Séítah.' },
+        { name: 'Cratered Floor (Fractured Rough)', e: 0.6, n: -0.4,
+          info: 'Crater-floor unit explored during the first science campaign.' }
+      ] },
+      { id: 'c2', title: 'Campaign 2 · Delta route', color: '#8ff0e0', items: [
+        { name: 'Three Forks', e: -2.7, n: 0.2,
+          info: 'Base of the delta. Perseverance deposited 10 sample tubes here in Dec 2022 – Jan 2023.' },
+        { name: 'Hawksbill Gap', e: -2.2, n: 0.9,
+          info: 'River channel the team chose as the route up onto the delta.' },
+        { name: 'Cape Nukshak', e: -1.9, n: 2.1,
+          info: 'River channel that was considered as a route up the delta, but Hawksbill Gap was used instead.' }
+      ] }
+    ];
+
+    const SITE_ALL = [];
+    function regSite(s, groupTitle) {
+      s.idx = SITE_ALL.length;
+      s.groupTitle = groupTitle;
+      SITE_ALL.push(s);
+    }
+    regSite({ name: 'Octavia E. Butler Landing', lat: SITE.lat, lng: SITE.lng }, 'Landing');
+    PIA_POINTS.forEach(function (p) { regSite(p, 'Delta front (HiRISE photo)'); });
+    PIA_OTHER.forEach(function (p) { regSite(p, 'Other features (unnamed)'); });
+    JEZERO_UNITS.forEach(function (u) { regSite(u, 'Geologic units (approx. centre)'); });
+
+    // The landing-site marker gets the same Start / Destination buttons.
+    site.unbindPopup().bindPopup(function () {
+      return '<b>Site:</b> Jezero Crater<br>' +
+        '<b>Rover:</b> Perseverance<br>' +
+        '<b>Landing date:</b> February 18, 2021<br>' +
+        '<b>Coordinates:</b> 18.44°N, 77.45°E' +
+        siteButtons(0);
+    });
+
+    // "Start" / "Destination" buttons used in every point's popup.
+    function siteButtons(idx) {
+      return '<div class="popup-btns">' +
+        '<button onclick="useSite(' + idx + ',\'start\')">🟢 Start</button>' +
+        '<button onclick="useSite(' + idx + ',\'dest\')">📍 Destination</button></div>';
+    }
+
+    function sitePopup(s) {
+      return '<b>' + s.name + '</b><br>' + s.info +
+        '<br><b>Coordinates:</b> ' + fmtCoord(s.lat, s.lng) +
+        '<br><span style="opacity:.7">⚠ Approximate (±1 km)</span>' +
+        siteButtons(s.idx);
+    }
+
+    SITE_GROUPS.forEach(function (g) {
+      g.group = L.layerGroup();
+      g.group.__siteGroup = g.id;
+      g.items.forEach(function (s) {
+        const p = kmToLatLng(s.e, s.n);
+        s.lat = p.lat; s.lng = p.lng; s.color = g.color;
+        regSite(s, g.title);
+        L.circleMarker([s.lat, s.lng], {
+          radius: 6, color: '#fff', weight: 2, fillColor: g.color, fillOpacity: 1
+        }).bindPopup(sitePopup(s)).addTo(g.group);
+        L.marker([s.lat, s.lng], {
+          icon: L.divIcon({
+            className: 'unit-icon',
+            html: '<div class="unit-label poi-label" style="--c:' + g.color + '">' + s.name + '</div>',
+            iconSize: [0, 0]
+          }),
+          interactive: false, keyboard: false
+        }).addTo(g.group);
+      });
+      g.group.addTo(map);
+    });
+
+    // ----- layer checkboxes -----
+    (function buildSitesPanel() {
+      const box = document.getElementById('sites-box');
+      SITE_GROUPS.forEach(function (g) {
+        const label = document.createElement('label');
+        label.className = 'chk';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = map.hasLayer(g.group);
+        cb.addEventListener('change', function () {
+          if (cb.checked) map.addLayer(g.group); else map.removeLayer(g.group);
+        });
+        const text = document.createElement('span');
+        text.innerHTML = '<span style="color:' + g.color + '">●</span> ' + g.title;
+        label.appendChild(cb);
+        label.appendChild(text);
+        box.appendChild(label);
+        g.checkbox = cb;
+      });
+    })();
+    map.on('layeradd layerremove', function (e) {
+      if (!e.layer.__siteGroup) return;
+      SITE_GROUPS.forEach(function (g) { g.checkbox.checked = map.hasLayer(g.group); });
+      syncGlobeLabels();
+    });
+
+    // ----- named-site dropdown -----
+    (function buildSiteSelect() {
+      const sel = document.getElementById('site-select');
+      let og = null;
+      SITE_ALL.forEach(function (s) {
+        if (!og || og.label !== s.groupTitle) {
+          og = document.createElement('optgroup');
+          og.label = s.groupTitle;
+          sel.appendChild(og);
+        }
+        const o = document.createElement('option');
+        o.value = s.idx;
+        o.textContent = s.name;
+        og.appendChild(o);
+      });
+    })();
+
+    function flyToPoint(lat, lng, closeAlt) {
+      if (globeActive && globe) {
+        globe.pointOfView({ lat: lat, lng: lng, altitude: closeAlt }, 1200);
+      } else {
+        map.setView([lat, lng], Math.max(map.getZoom(), 10));
+      }
+    }
+
+    function useSite(idx, mode) {
+      const s = SITE_ALL[idx];
+      if (!s) return;
+      const d = document.getElementById('route-details');
+      if (d) d.open = true;
+      document.getElementById(mode === 'start' ? 'start-coord' : 'dest-coord').value =
+        s.lat.toFixed(5) + ', ' + s.lng.toFixed(5);
+      applyCoordInput(mode);
+      map.closePopup();
+    }
+
+    document.getElementById('site-go-btn').addEventListener('click', function () {
+      const s = SITE_ALL[document.getElementById('site-select').value];
+      if (s) flyToPoint(s.lat, s.lng, 0.05);
+    });
+    document.getElementById('site-start-btn').addEventListener('click', function () {
+      useSite(document.getElementById('site-select').value, 'start');
+    });
+    document.getElementById('site-dest-btn').addEventListener('click', function () {
+      useSite(document.getElementById('site-select').value, 'dest');
+    });
+
+    // ----- coordinate parsing -----
+    // Accepts: "18.44, 77.45"   "18.44N 77.45E"   "18.44 N, 282.5 E"   "-18.4 77.4"
+    // Latitude first. Longitudes above 180 (0–360°E) are converted to -180…180.
+    function parseCoords(str) {
+      const s = String(str).toUpperCase().replace(/[°,;]/g, ' ').replace(/\s+/g, ' ').trim();
+      const re = /(-?\d+(?:\.\d+)?)\s*([NSEW])?/g;
+      const vals = [];
+      let m;
+      while ((m = re.exec(s))) vals.push({ v: parseFloat(m[1]), h: m[2] || '' });
+      if (vals.length !== 2) return null;
+
+      let a = vals[0];
+      let b = vals[1];
+      if ((a.h === 'E' || a.h === 'W') && (b.h === 'N' || b.h === 'S')) { const t = a; a = b; b = t; }
+      if ((a.h === 'E' || a.h === 'W') || (b.h === 'N' || b.h === 'S')) return null;
+      let lat = a.v;
+      let lng = b.v;
+      if (a.h === 'S') lat = -lat;
+      if (b.h === 'W') lng = -lng;
+      if (lng > 180 && lng <= 360) lng -= 360;
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+      return { lat: lat, lng: lng };
+    }
+
+    function syncCoordInputs() {
+      const s = document.getElementById('start-coord');
+      const d = document.getElementById('dest-coord');
+      if (document.activeElement !== s) {
+        s.value = start.custom ? start.lat.toFixed(5) + ', ' + start.lng.toFixed(5) : '';
+      }
+      if (document.activeElement !== d) {
+        d.value = dest ? dest.lat.toFixed(5) + ', ' + dest.lng.toFixed(5) : '';
+      }
+    }
+
+    function focusRoute() {
+      if (globeActive && globe) {
+        const a = start;
+        const b = dest || start;
+        const d = hav([a.lat, a.lng], [b.lat, b.lng]);
+        const alt = Math.min(2.5, Math.max(0.05, d / MARS_RADIUS * 1.6 + 0.05));
+        globe.pointOfView({ lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2, altitude: alt }, 1200);
+      } else if (dest) {
+        map.fitBounds(L.latLngBounds([start.lat, start.lng], [dest.lat, dest.lng]).pad(0.3), { maxZoom: 12 });
+      } else {
+        map.setView([start.lat, start.lng], Math.max(map.getZoom(), 8));
+      }
+    }
+
+    function applyCoordInput(mode) {
+      const msg = document.getElementById('coord-msg');
+      const p = parseCoords(document.getElementById(mode === 'start' ? 'start-coord' : 'dest-coord').value);
+      if (!p) {
+        msg.textContent = 'Could not read the coordinates. Use e.g. 18.4446, 77.4509 or 18.44N 77.45E (latitude first).';
+        return;
+      }
+      msg.textContent = '';
+      if (!map.hasLayer(routeGroup)) routeGroup.addTo(map);
+      if (mode === 'start') setStart(p.lat, p.lng); else setDestination(p.lat, p.lng);
+      focusRoute();
+    }
+
+    ['start', 'dest'].forEach(function (mode) {
+      document.getElementById(mode + '-coord-btn').addEventListener('click', function () { applyCoordInput(mode); });
+      document.getElementById(mode + '-coord').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') applyCoordInput(mode);
+      });
+    });
+
+    // =====================================================================
+    // Séítah mineral map + route map (NASA PIA25024), as image layers
+    // =====================================================================
+    // The picture has two panels side by side: left = terrain + first-campaign route,
+    // right = igneous mineral map. It is NOT georeferenced, so the place on the map is a
+    // first guess. Use the "Align to the map" numbers in the panel, then copy the final
+    // values here. (Each panel is assumed to be half the image width.)
+    const SEITAH = {
+      url: 'https://assets.science.nasa.gov/content/dam/science/psd/mars/downloadable_items/4/6/46856_PIA25024.jpg',
+      w: 2486, h: 1078,
+      e: -1.4, n: -0.9,      // km east / north of the landing site = centre of the panel
+      widthKm: 6             // width of ONE panel on the ground
+    };
+
+    function seitahBounds() {
+      const halfW = SEITAH.widthKm / 2;
+      const halfH = SEITAH.widthKm * SEITAH.h / (SEITAH.w / 2) / 2;
+      const sw = kmToLatLng(SEITAH.e - halfW, SEITAH.n - halfH);
+      const ne = kmToLatLng(SEITAH.e + halfW, SEITAH.n + halfH);
+      return L.latLngBounds([sw.lat, sw.lng], [ne.lat, ne.lng]);
+    }
+
+    function makeSeitahLayer(side) {
+      const NS = 'http://www.w3.org/2000/svg';
+      const half = SEITAH.w / 2;
+      const svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('xmlns', NS);
+      svg.setAttribute('viewBox', (side === 'left' ? 0 : half) + ' 0 ' + half + ' ' + SEITAH.h);
+      svg.setAttribute('preserveAspectRatio', 'none');
+      const img = document.createElementNS(NS, 'image');
+      img.setAttribute('href', SEITAH.url);
+      img.setAttribute('width', SEITAH.w);
+      img.setAttribute('height', SEITAH.h);
+      svg.appendChild(img);
+      return L.svgOverlay(svg, seitahBounds(), {
+        opacity: 0.8, interactive: false,
+        attribution: 'NASA/JPL-Caltech/CRISM/CTX/HRSC/MSSS/USGS (PIA25024)'
+      });
+    }
+
+    SEITAH_STATE.terrain = makeSeitahLayer('left');
+    SEITAH_STATE.minerals = makeSeitahLayer('right');
+    const SEITAH_LAYERS = { terrain: SEITAH_STATE.terrain, minerals: SEITAH_STATE.minerals };
+
+    document.querySelectorAll('input[data-sl]').forEach(function (box) {
+      box.addEventListener('change', function () {
+        const layer = SEITAH_LAYERS[box.dataset.sl];
+        if (box.checked) map.addLayer(layer); else map.removeLayer(layer);
+        renderLegends();
+      });
+    });
+
+    document.getElementById('op-seitah').addEventListener('input', function (e) {
+      const v = e.target.value / 100;
+      SEITAH_STATE.terrain.setOpacity(v);
+      SEITAH_STATE.minerals.setOpacity(v);
+    });
+
+    const SA_FIELDS = { 'sa-e': 'e', 'sa-n': 'n', 'sa-w': 'widthKm' };
+    Object.keys(SA_FIELDS).forEach(function (id) {
+      const input = document.getElementById(id);
+      input.value = SEITAH[SA_FIELDS[id]];
+      input.addEventListener('input', function () {
+        const v = parseFloat(input.value);
+        if (isNaN(v) || (id === 'sa-w' && v < 0.5)) return;
+        SEITAH[SA_FIELDS[id]] = v;
+        const b = seitahBounds();
+        SEITAH_STATE.terrain.setBounds(b);
+        SEITAH_STATE.minerals.setBounds(b);
+      });
+    });
+
+    document.getElementById('sa-go').addEventListener('click', function () {
+      if (globeActive) setBase('imagery');
+      map.fitBounds(seitahBounds().pad(0.1), { maxZoom: 12 });
+    });
+
+    // keep the Séítah checkboxes in sync with the layers
+    map.on('layeradd layerremove', function (e) {
+      if (e.layer !== SEITAH_STATE.terrain && e.layer !== SEITAH_STATE.minerals) return;
+      document.querySelectorAll('input[data-sl]').forEach(function (box) {
+        box.checked = map.hasLayer(SEITAH_LAYERS[box.dataset.sl]);
+      });
     });
 
     map.on('click', function (e) {
