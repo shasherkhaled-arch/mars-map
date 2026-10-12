@@ -54,6 +54,14 @@
       border-radius: 50%;
       box-shadow: 0 0 0 4px rgba(255, 77, 46, 0.35), 0 0 14px #ff4d2e;
     }
+    .dest-pin {
+      width: 18px;
+      height: 18px;
+      background: #4dd2ff;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 0 4px rgba(77, 210, 255, 0.35), 0 0 14px #4dd2ff;
+    }
     .map-info {
       background: rgba(9, 10, 15, 0.85);
       color: #f2e9e4;
@@ -86,6 +94,66 @@
       max-width: 80%;
       pointer-events: none;
     }
+
+    /* ---------- route planner panel ---------- */
+    .route-panel {
+      background: rgba(9, 10, 15, 0.9);
+      color: #f2e9e4;
+      border: 1px solid #c1440e;
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 12px;
+      line-height: 1.6;
+      width: 220px;
+    }
+    .route-panel .route-title { font-weight: bold; color: #ff8c5a; margin-bottom: 6px; font-size: 13px; }
+    .route-panel .btn-row { display: flex; gap: 6px; }
+    .route-panel button {
+      flex: 1;
+      background: #14192b;
+      color: #f2e9e4;
+      border: 1px solid #c1440e;
+      border-radius: 4px;
+      padding: 5px 6px;
+      font: inherit;
+      cursor: pointer;
+    }
+    .route-panel button:hover { background: #22294a; }
+    .route-panel button.active { background: #c1440e; border-color: #ff8c5a; }
+    .route-panel .hint { color: #b8c1d1; margin-top: 6px; }
+    .route-panel .speed-row { margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+    .route-panel input[type=number] {
+      width: 64px;
+      background: #14192b;
+      color: #f2e9e4;
+      border: 1px solid #c1440e;
+      border-radius: 4px;
+      padding: 2px 4px;
+      font: inherit;
+    }
+    .route-panel input[type=range] { flex: 1; min-width: 0; accent-color: #4dd2ff; }
+    .route-panel .muted { color: #8d97aa; font-size: 11px; }
+    #route-info { margin-top: 6px; border-top: 1px solid rgba(193, 68, 14, 0.5); padding-top: 6px; display: none; }
+    #route-info b { color: #4dd2ff; }
+    #map.picking, #map.picking .leaflet-interactive, #map.picking .leaflet-grab { cursor: crosshair; }
+    #globe.picking, #globe.picking canvas { cursor: crosshair !important; }
+
+    /* ---------- elevation legend ---------- */
+    .legend {
+      background: rgba(9, 10, 15, 0.9);
+      color: #f2e9e4;
+      border: 1px solid #c1440e;
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .legend .legend-title { font-weight: bold; color: #ff8c5a; margin-bottom: 6px; }
+    .legend .row { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
+    .legend .swatch { width: 26px; height: 14px; border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 2px; flex: none; }
+    .legend .val { min-width: 62px; text-align: right; font-variant-numeric: tabular-nums; font-weight: bold; }
+    .legend .note { color: #b8c1d1; }
+    .legend .foot { margin-top: 6px; color: #8d97aa; font-size: 11px; max-width: 220px; }
   </style>
 </head>
 <body>
@@ -139,11 +207,14 @@
       )
       .addTo(map);
 
+    // Route (destination marker + path) lives in its own layer group.
+    const routeGroup = L.layerGroup().addTo(map);
+
     const globeBase = L.layerGroup();
 
     L.control.layers(
       { 'Surface imagery': imagery, '3D Globe': globeBase },
-      { 'Elevation (MOLA)': elevation, 'Jezero high-res (CTX)': ctx, 'Landing site': site },
+      { 'Elevation (MOLA)': elevation, 'Jezero high-res (CTX)': ctx, 'Landing site': site, 'Route': routeGroup },
       { collapsed: false }
     ).addTo(map);
 
@@ -193,6 +264,49 @@
       if (globeActive) return;
       document.getElementById('coords').textContent = 'Lat: --, Lon: --';
     });
+
+    // ---------- Elevation (MOLA) legend ----------
+    // Approximate colour/elevation pairs for the MOLA colour-shaded relief
+    // (elevation relative to the Mars datum). Values are indicative.
+    const MOLA_LEGEND = [
+      { m: 21000, color: '#ffffff', note: 'Olympus Mons summit' },
+      { m: 16000, color: '#b98c7a', note: '' },
+      { m: 12000, color: '#9c3d26', note: '' },
+      { m: 8000,  color: '#e0542c', note: '' },
+      { m: 4000,  color: '#f2a93b', note: '' },
+      { m: 1000,  color: '#e3e86a', note: '' },
+      { m: 0,     color: '#6fcf7a', note: 'Datum (0 m)' },
+      { m: -2000, color: '#38b8c4', note: '' },
+      { m: -5000, color: '#2f6fd0', note: '' },
+      { m: -8000, color: '#4b2a9a', note: 'Hellas basin floor' }
+    ];
+
+    const legend = L.control({ position: 'bottomright' });
+    legend.onAdd = function () {
+      const div = L.DomUtil.create('div', 'legend');
+      let html = '<div class="legend-title">Elevation (MOLA)</div>';
+      MOLA_LEGEND.forEach(function (s) {
+        const label = (s.m > 0 ? '+' : '') + s.m.toLocaleString('en-US') + ' m';
+        html += '<div class="row">' +
+          '<span class="swatch" style="background:' + s.color + '"></span>' +
+          '<span class="val">' + label + '</span>' +
+          '<span class="note">' + s.note + '</span></div>';
+      });
+      html += '<div class="foot">Approximate values; colours are blended with shaded relief.</div>';
+      div.innerHTML = html;
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.disableScrollPropagation(div);
+      return div;
+    };
+
+    function syncLegend() {
+      if (map.hasLayer(elevation)) legend.addTo(map); else legend.remove();
+    }
+    map.on('overlayadd overlayremove', function (e) {
+      if (e.layer === elevation) syncLegend();
+    });
+    syncLegend();
+
     // ---------- 3D globe ----------
     const SITE = { lat: 18.4446, lng: 77.4509 };
     const IMAGERY_TILES =
@@ -201,12 +315,22 @@
       'https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg';
     const CTX_TILES =
       'https://trek.nasa.gov/tiles/Mars/EQ/Jezero_CTX_BlockAdj_dd/1.0.0/default/default028mm/{z}/{y}/{x}.png';
-    const GLOBE_ZOOM = 4; // Higher-resolution global NASA mosaic for the 3D planet
+
+    const GLOBE_ZOOM = 3;          // whole-planet texture
     const GLOBE_FOV = 50;
-    const PATCH_ZOOM = 11; // Finer CTX tiles reveal the crater rim and interior features
-    const PATCH_ELEVATION_ZOOM = 6;
+    const IMAGERY_MAX_ZOOM = 7;    // finest level NASA provides for the global mosaic
+    const ELEVATION_MAX_ZOOM = 6;
+
+    const PATCH_ZOOM = 10;         // Jezero CTX patch
     const PATCH_BOX = { south: 17.45, north: 19.45, west: 76.45, east: 78.45 };
     const PATCH_TRIGGER_ALTITUDE = 1.0;
+
+    const DETAIL_MIN_ZOOM = 5;     // sharper imagery that follows the camera
+    const DETAIL_MAX_TILES = 160;
+    const DETAIL_MAX_SIDE = 16;    // tiles per side, keeps the texture under 4096 px
+    const DETAIL_DELAY = 350;
+
+    const ROUTE_COLOR = '#4dd2ff';
 
     const globeDiv = document.createElement('div');
     globeDiv.id = 'globe';
@@ -230,6 +354,15 @@
     let patchElevation = null;
     let patchElevationLoading = false;
 
+    let detail = null;
+    let detailJob = 0;
+    let detailTimer = null;
+
+    // route state
+    let dest = null;        // { lat, lng }
+    let route = null;       // { pts, distance, bearing }
+    let pickMode = false;
+
     function setGlobeMessage(text) {
       const msg = document.getElementById('globe-msg');
       if (msg) msg.textContent = text;
@@ -240,7 +373,8 @@
       return { w: box.clientWidth, h: box.clientHeight };
     }
 
-    // Whole-planet NASA mosaic: use a higher zoom for a more faithful global surface.
+    // ----- tile loading -----
+    // Whole-planet mosaic: every tile at one zoom level, drawn on one canvas.
     function loadTileCanvas(template, onDone, onFail) {
       const cols = Math.pow(2, GLOBE_ZOOM + 1);
       const rows = Math.pow(2, GLOBE_ZOOM);
@@ -312,6 +446,22 @@
       }
     }
 
+    // Draw one region canvas on top of another, matching latitude and longitude.
+    function drawRegion(c, targetCanvas, targetRegion, srcCanvas, srcRegion, alpha, operation) {
+      const sx = targetCanvas.width / (targetRegion.east - targetRegion.west);
+      const sy = targetCanvas.height / (targetRegion.north - targetRegion.south);
+      c.globalCompositeOperation = operation;
+      c.globalAlpha = alpha;
+      c.drawImage(
+        srcCanvas,
+        (srcRegion.west - targetRegion.west) * sx, (targetRegion.north - srcRegion.north) * sy,
+        (srcRegion.east - srcRegion.west) * sx, (srcRegion.north - srcRegion.south) * sy
+      );
+      c.globalAlpha = 1;
+      c.globalCompositeOperation = 'source-over';
+    }
+
+    // ----- whole-planet texture -----
     function composeTexture() {
       if (!composeCanvas) {
         composeCanvas = document.createElement('canvas');
@@ -345,7 +495,52 @@
       globe.globeImageUrl(canvas.toDataURL('image/jpeg', 0.9));
     }
 
-    // ----- high-resolution Jezero CTX patch laid over the 3D globe -----
+    // ----- patches: textured pieces of sphere laid over the globe -----
+    function findGlobeMesh() {
+      let found = null;
+      const material = globe.globeMaterial();
+      globe.scene().traverse(function (o) {
+        if (!found && o.isMesh && o.material === material) found = o;
+      });
+      return found;
+    }
+
+    function makePatchMesh(canvas, region, radiusScale) {
+      const globeMesh = findGlobeMesh();
+      if (!globeMesh || !globeMesh.geometry.parameters) return null;
+      const baseMaterial = globe.globeMaterial();
+      if (!baseMaterial.map) return null;
+      const rad = Math.PI / 180;
+      const geometry = new globeMesh.geometry.constructor(
+        globeMesh.geometry.parameters.radius * radiusScale, 64, 64,
+        (region.west + 180) * rad, (region.east - region.west) * rad,
+        (90 - region.north) * rad, (region.north - region.south) * rad
+      );
+      const texture = new baseMaterial.map.constructor(canvas);
+      if ('colorSpace' in baseMaterial.map) texture.colorSpace = baseMaterial.map.colorSpace;
+      texture.needsUpdate = true;
+      const material = baseMaterial.clone();
+      material.map = texture;
+      material.transparent = true;
+      material.polygonOffset = true;
+      material.polygonOffsetFactor = -2;
+      material.polygonOffsetUnits = -2;
+      const mesh = new globeMesh.constructor(geometry, material);
+      globeMesh.parent.add(mesh);
+      return mesh;
+    }
+
+    function removePatchMesh(mesh) {
+      if (!mesh) return;
+      if (mesh.parent) mesh.parent.remove(mesh);
+      if (mesh.geometry && mesh.geometry.dispose) mesh.geometry.dispose();
+      if (mesh.material) {
+        if (mesh.material.map && mesh.material.map.dispose) mesh.material.map.dispose();
+        if (mesh.material.dispose) mesh.material.dispose();
+      }
+    }
+
+    // ----- Jezero CTX patch (fixed area, very sharp) -----
     function composePatch() {
       const c = patchCompose.getContext('2d');
       c.globalCompositeOperation = 'source-over';
@@ -353,19 +548,7 @@
       c.clearRect(0, 0, patchCompose.width, patchCompose.height);
       c.drawImage(patchBase, 0, 0);
       if (map.hasLayer(elevation) && patchElevation) {
-        const r = patchElevation.region;
-        const p = patchRegion;
-        const sx = patchCompose.width / (p.east - p.west);
-        const sy = patchCompose.height / (p.north - p.south);
-        c.globalCompositeOperation = 'source-atop';
-        c.globalAlpha = 0.7;
-        c.drawImage(
-          patchElevation.canvas,
-          (r.west - p.west) * sx, (p.north - r.north) * sy,
-          (r.east - r.west) * sx, (r.north - r.south) * sy
-        );
-        c.globalAlpha = 1;
-        c.globalCompositeOperation = 'source-over';
+        drawRegion(c, patchCompose, patchRegion, patchElevation.canvas, patchElevation.region, 0.7, 'source-atop');
       }
       return patchCompose;
     }
@@ -376,37 +559,10 @@
       patchMesh.material.map.needsUpdate = true;
     }
 
-    function findGlobeMesh() {
-      let found = null;
-      const material = globe.globeMaterial();
-      globe.scene().traverse(function (o) {
-        if (!found && o.isMesh && o.material === material) found = o;
-      });
-      return found;
-    }
-
     function createPatch() {
-      const globeMesh = findGlobeMesh();
-      if (!globeMesh || !globeMesh.geometry.parameters) return false;
-      const baseMaterial = globe.globeMaterial();
-      if (!baseMaterial.map) return false;
-      const rad = Math.PI / 180;
-      const geometry = new globeMesh.geometry.constructor(
-        globeMesh.geometry.parameters.radius * 1.0008, 128, 128,
-        (patchRegion.west + 180) * rad, (patchRegion.east - patchRegion.west) * rad,
-        (90 - patchRegion.north) * rad, (patchRegion.north - patchRegion.south) * rad
-      );
-      const texture = new baseMaterial.map.constructor(composePatch());
-      if ('colorSpace' in baseMaterial.map) texture.colorSpace = baseMaterial.map.colorSpace;
-      texture.needsUpdate = true;
-      const material = baseMaterial.clone();
-      material.map = texture;
-      material.transparent = true;
-      material.polygonOffset = true;
-      material.polygonOffsetFactor = -2;
-      material.polygonOffsetUnits = -2;
-      patchMesh = new globeMesh.constructor(geometry, material);
-      globeMesh.parent.add(patchMesh);
+      const mesh = makePatchMesh(composePatch(), patchRegion, 1.002);
+      if (!mesh) return false;
+      patchMesh = mesh;
       patchMesh.visible = map.hasLayer(ctx);
       return true;
     }
@@ -417,7 +573,7 @@
         if (patchElevationLoading) return;
         patchElevationLoading = true;
         loadRegion(
-          ELEVATION_TILES, PATCH_ELEVATION_ZOOM, PATCH_BOX,
+          ELEVATION_TILES, ELEVATION_MAX_ZOOM, PATCH_BOX,
           function (canvas, region) {
             patchElevation = { canvas: canvas, region: region };
             patchElevationLoading = false;
@@ -465,6 +621,105 @@
       if (patchMesh) patchMesh.visible = map.hasLayer(ctx);
     }
 
+    // ----- detail patch: sharper global imagery around wherever the camera looks -----
+    function neededDetail() {
+      const pov = globe.pointOfView();
+      const size = globeSize();
+      const aspect = Math.max(size.w / Math.max(size.h, 1), 1);
+      const halfLat = Math.min(0.466 * pov.altitude * 180 / Math.PI, 85);
+      const degPerPx = 2 * halfLat / Math.max(size.h, 1);
+      let z = Math.min(Math.ceil(Math.log2(1.40625 / degPerPx)), IMAGERY_MAX_ZOOM);
+      if (z < DETAIL_MIN_ZOOM) return null;
+
+      const cosLat = Math.max(Math.cos(pov.lat * Math.PI / 180), 0.25);
+      const halfLon = Math.min(halfLat * aspect / cosLat, 180);
+      const margin = 1.2;
+      const area = function (k) {
+        return {
+          south: Math.max(pov.lat - halfLat * k, -90),
+          north: Math.min(pov.lat + halfLat * k, 90),
+          west: Math.max(pov.lng - halfLon * k, -180),
+          east: Math.min(pov.lng + halfLon * k, 180)
+        };
+      };
+      const box = area(margin);
+      const visible = area(1);
+
+      while (z >= DETAIL_MIN_ZOOM) {
+        const tile = 360 / Math.pow(2, z + 1);
+        const cols = Math.ceil((box.east - box.west) / tile) + 1;
+        const rows = Math.ceil((box.north - box.south) / tile) + 1;
+        if (cols <= DETAIL_MAX_SIDE && rows <= DETAIL_MAX_SIDE && cols * rows <= DETAIL_MAX_TILES) {
+          return { z: z, box: box, visible: visible };
+        }
+        z--;
+      }
+      return null;
+    }
+
+    function regionContains(r, v) {
+      return r.south <= v.south + 1e-6 && r.north >= v.north - 1e-6 &&
+             r.west <= v.west + 1e-6 && r.east >= v.east - 1e-6;
+    }
+
+    function removeDetail() {
+      if (!detail) return;
+      removePatchMesh(detail.mesh);
+      detail = null;
+    }
+
+    function buildDetail(need, job) {
+      const withElevation = map.hasLayer(elevation);
+      loadRegion(
+        IMAGERY_TILES, need.z, need.box,
+        function (canvas, region) {
+          if (job !== detailJob) return;
+          const finish = function (elev) {
+            if (job !== detailJob) return;
+            if (elev) {
+              drawRegion(canvas.getContext('2d'), canvas, region, elev.canvas, elev.region, 0.7, 'source-over');
+            }
+            const mesh = makePatchMesh(canvas, region, 1.001);
+            if (!mesh) return;
+            removeDetail();
+            detail = { mesh: mesh, z: need.z, region: region, elevation: withElevation };
+          };
+          if (withElevation) {
+            loadRegion(
+              ELEVATION_TILES, Math.min(need.z, ELEVATION_MAX_ZOOM), need.box,
+              function (ec, er) { finish({ canvas: ec, region: er }); },
+              function () { finish(null); }
+            );
+          } else {
+            finish(null);
+          }
+        },
+        function () { console.warn('Could not load detail imagery for this view.'); }
+      );
+    }
+
+    function updateDetail() {
+      detailTimer = null;
+      if (!globe || !globeActive) return;
+      const need = neededDetail();
+      detailJob++;
+      if (!need) {
+        removeDetail();
+        return;
+      }
+      if (detail && detail.z >= need.z &&
+          detail.elevation === map.hasLayer(elevation) &&
+          regionContains(detail.region, need.visible)) {
+        return;
+      }
+      buildDetail(need, detailJob);
+    }
+
+    function scheduleDetail() {
+      if (detailTimer) clearTimeout(detailTimer);
+      detailTimer = setTimeout(updateDetail, DETAIL_DELAY);
+    }
+
     // ----- layer / scale sync -----
     function syncGlobeElevation() {
       if (!globe) return;
@@ -488,13 +743,29 @@
         refreshGlobeTexture();
       }
       syncPatchElevation();
+      scheduleDetail();
     }
 
+    // Landing-site marker + destination marker on the globe.
     function syncGlobeSite() {
       if (!globe) return;
       const visible = map.hasLayer(site);
-      globe.pointsData(visible ? [SITE] : []);
+      const points = [];
+      if (visible) points.push(SITE);
+      if (dest && map.hasLayer(routeGroup)) {
+        points.push({ lat: dest.lat, lng: dest.lng, color: ROUTE_COLOR });
+      }
+      globe.pointsData(points);
       globe.ringsData(visible ? [SITE] : []);
+    }
+
+    // Route line on the globe.
+    function syncGlobeRoute() {
+      if (!globe) return;
+      syncGlobeSite();
+      const show = route && map.hasLayer(routeGroup);
+      const stroke = route ? Math.min(0.5, Math.max(0.03, route.distance / 1000 / 20000)) : 0.1;
+      globe.pathsData(show ? [{ pts: route.pts, stroke: stroke }] : []);
     }
 
     function updateGlobeScale() {
@@ -531,18 +802,29 @@
             .showAtmosphere(true)
             .atmosphereColor('#ff8c5a')
             .atmosphereAltitude(0.12)
-            .pointColor(function () { return '#ff4d2e'; })
+            .pointColor(function (d) { return d.color || '#ff4d2e'; })
             .pointAltitude(0.01)
             .pointRadius(0.35)
             .ringColor(function () { return function (t) { return 'rgba(255,77,46,' + (1 - t) + ')'; }; })
             .ringMaxRadius(4)
             .ringPropagationSpeed(2)
-            .ringRepeatPeriod(1400);
+            .ringRepeatPeriod(1400)
+            .pathPoints('pts')
+            .pathPointLat(function (p) { return p[0]; })
+            .pathPointLng(function (p) { return p[1]; })
+            .pathPointAlt(0.006)
+            .pathColor(function () { return ROUTE_COLOR; })
+            .pathStroke(function (d) { return d.stroke; })
+            .pathTransitionDuration(0)
+            .onGlobeClick(function (coords) {
+              if (pickMode && coords) setDestination(coords.lat, coords.lng);
+            });
           globe.pointOfView({ lat: SITE.lat, lng: SITE.lng, altitude: 2.2 });
 
           globe.controls().addEventListener('change', function () {
             updateGlobeScale();
             maybeLoadPatch();
+            scheduleDetail();
           });
           globeDiv.addEventListener('mousemove', function (e) {
             if (!globeActive || typeof globe.toGlobeCoords !== 'function') return;
@@ -556,7 +838,7 @@
             document.getElementById('coords').textContent = 'Lat: --, Lon: --';
           });
 
-          syncGlobeSite();
+          syncGlobeRoute();
           syncGlobeElevation();
           updateGlobeScale();
           maybeLoadPatch();
@@ -581,7 +863,7 @@
       } else if (globe) {
         const size = globeSize();
         globe.width(size.w).height(size.h);
-        syncGlobeSite();
+        syncGlobeRoute();
         syncGlobeElevation();
         syncPatchVisibility();
         updateGlobeScale();
@@ -597,6 +879,7 @@
       if (!globeActive) return;
       if (e.layer === elevation) syncGlobeElevation();
       if (e.layer === site) syncGlobeSite();
+      if (e.layer === routeGroup) syncGlobeRoute();
       if (e.layer === ctx) {
         syncPatchVisibility();
         maybeLoadPatch();
@@ -608,7 +891,613 @@
         const size = globeSize();
         globe.width(size.w).height(size.h);
         updateGlobeScale();
+        scheduleDetail();
       }
+    });
+
+    // ---------- Route planner ----------
+    const DEG = Math.PI / 180;
+
+    function toVec(lat, lng) {
+      return [
+        Math.cos(lat * DEG) * Math.cos(lng * DEG),
+        Math.cos(lat * DEG) * Math.sin(lng * DEG),
+        Math.sin(lat * DEG)
+      ];
+    }
+
+    // Shortest path on the sphere (great circle) between two points.
+    function geodesic(a, b) {
+      const A = toVec(a.lat, a.lng);
+      const B = toVec(b.lat, b.lng);
+      const dot = Math.min(1, Math.max(-1, A[0] * B[0] + A[1] * B[1] + A[2] * B[2]));
+      const omega = Math.acos(dot);
+      const distance = omega * MARS_RADIUS;
+      const n = Math.min(400, Math.max(16, Math.ceil(distance / 20000)));
+      const pts = [];
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        let k1, k2;
+        if (omega < 1e-9) { k1 = 1 - t; k2 = t; }
+        else {
+          k1 = Math.sin((1 - t) * omega) / Math.sin(omega);
+          k2 = Math.sin(t * omega) / Math.sin(omega);
+        }
+        const x = k1 * A[0] + k2 * B[0];
+        const y = k1 * A[1] + k2 * B[1];
+        const z = k1 * A[2] + k2 * B[2];
+        pts.push([Math.asin(Math.max(-1, Math.min(1, z))) / DEG, Math.atan2(y, x) / DEG]);
+      }
+      const dLng = (b.lng - a.lng) * DEG;
+      const y = Math.sin(dLng) * Math.cos(b.lat * DEG);
+      const x = Math.cos(a.lat * DEG) * Math.sin(b.lat * DEG) -
+                Math.sin(a.lat * DEG) * Math.cos(b.lat * DEG) * Math.cos(dLng);
+      const bearing = (Math.atan2(y, x) / DEG + 360) % 360;
+      return { pts: pts, distance: distance, bearing: bearing };
+    }
+
+    // Split the path where it crosses the ±180° meridian so Leaflet doesn't draw across the map.
+    function splitAtAntimeridian(pts) {
+      const parts = [[pts[0]]];
+      for (let i = 1; i < pts.length; i++) {
+        if (Math.abs(pts[i][1] - pts[i - 1][1]) > 180) parts.push([]);
+        parts[parts.length - 1].push(pts[i]);
+      }
+      return parts.filter(function (p) { return p.length > 1; });
+    }
+
+    function compass(deg) {
+      const names = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      return names[Math.round(deg / 45) % 8];
+    }
+
+    function formatDistance(m) {
+      return m >= 1000 ? (m / 1000).toFixed(m >= 100000 ? 0 : 1) + ' km' : Math.round(m) + ' m';
+    }
+
+    function formatDuration(hours) {
+      if (hours < 1) return Math.max(1, Math.round(hours * 60)) + ' min';
+      if (hours < 48) return hours.toFixed(1) + ' h';
+      return (hours / 24).toFixed(1) + ' days (Earth)';
+    }
+
+    function fmtCoord(lat, lng) {
+      return Math.abs(lat).toFixed(3) + '°' + (lat >= 0 ? 'N' : 'S') + ', ' +
+             Math.abs(lng).toFixed(3) + '°' + (lng >= 0 ? 'E' : 'W');
+    }
+
+    const panel = L.control({ position: 'topleft' });
+    panel.onAdd = function () {
+      const div = L.DomUtil.create('div', 'route-panel');
+      div.innerHTML =
+        '<div class="route-title">🧑‍🚀 Route planner</div>' +
+        '<div class="btn-row">' +
+          '<button id="pick-btn" type="button">📍 Pick destination</button>' +
+          '<button id="clear-btn" type="button">✖ Clear</button>' +
+        '</div>' +
+        '<div class="hint" id="route-hint">Press “Pick destination”, then click any point on the map or the globe.</div>' +
+        '<div class="speed-row"><label for="speed">Speed</label>' +
+          '<input id="speed" type="number" min="0.1" step="0.5" value="10"> <span>km/h</span></div>' +
+        '<div class="speed-row" title="0 = shortest path, higher = detour more to avoid steep ground and climbs">' +
+          '<label for="avoid">Avoid slopes</label>' +
+          '<input id="avoid" type="range" min="0" max="10" step="1" value="4"></div>' +
+        '<div id="route-info"></div>';
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.disableScrollPropagation(div);
+      return div;
+    };
+    panel.addTo(map);
+
+    function setPickMode(on) {
+      pickMode = on;
+      document.getElementById('pick-btn').classList.toggle('active', on);
+      document.getElementById('pick-btn').textContent = on ? '🎯 Click on the map…' : '📍 Pick destination';
+      map.getContainer().classList.toggle('picking', on);
+      globeDiv.classList.toggle('picking', on);
+      if (on && !map.hasLayer(routeGroup)) routeGroup.addTo(map);
+    }
+
+    // ---------- Terrain-aware planning ----------
+    // Elevation is decoded from the MOLA colour tiles (the same ones shown by the
+    // "Elevation (MOLA)" layer), put on a grid, and searched with A*. Steep and
+    // uphill steps cost extra, so the route bends around crater walls and ridges.
+    const GRID_MAX_SIDE = 160;
+    const GRID_MIN_CELL_M = 300;
+    const MAX_REGION_TILES = 100;
+    const MIN_ELEV_ZOOM = 2;
+
+    function hexToRgb(h) {
+      return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+    }
+
+    // Brightness-normalised legend colours (white is skipped: grey pixels are ambiguous).
+    const DECODE = MOLA_LEGEND.slice(1).map(function (s) {
+      const c = hexToRgb(s.color);
+      const mx = Math.max(c[0], c[1], c[2]);
+      return { m: s.m, n: [c[0] / mx, c[1] / mx, c[2] / mx] };
+    });
+
+    // Colour -> elevation by projecting onto the legend's colour ramp.
+    function decodeElevation(r, g, b) {
+      const mx = Math.max(r, g, b);
+      if (mx < 20) return NaN;                                   // empty / transparent
+      if ((mx - Math.min(r, g, b)) / mx < 0.12) return NaN;      // grey: ambiguous
+      const p = [r / mx, g / mx, b / mx];
+      let best = Infinity;
+      let elev = NaN;
+      for (let i = 0; i < DECODE.length - 1; i++) {
+        const A = DECODE[i].n;
+        const B = DECODE[i + 1].n;
+        const ab = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
+        const len2 = ab[0] * ab[0] + ab[1] * ab[1] + ab[2] * ab[2] || 1e-9;
+        let t = ((p[0] - A[0]) * ab[0] + (p[1] - A[1]) * ab[1] + (p[2] - A[2]) * ab[2]) / len2;
+        t = Math.max(0, Math.min(1, t));
+        const dx = p[0] - (A[0] + t * ab[0]);
+        const dy = p[1] - (A[1] + t * ab[1]);
+        const dz = p[2] - (A[2] + t * ab[2]);
+        const d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 < best) { best = d2; elev = DECODE[i].m + t * (DECODE[i + 1].m - DECODE[i].m); }
+      }
+      return best > 0.12 ? NaN : elev;
+    }
+
+    function hav(a, b) {
+      const dLat = (b[0] - a[0]) * DEG;
+      const dLng = (b[1] - a[1]) * DEG;
+      const h = Math.pow(Math.sin(dLat / 2), 2) +
+                Math.cos(a[0] * DEG) * Math.cos(b[0] * DEG) * Math.pow(Math.sin(dLng / 2), 2);
+      return 2 * MARS_RADIUS * Math.asin(Math.min(1, Math.sqrt(h)));
+    }
+
+    function pathLength(pts) {
+      let d = 0;
+      for (let i = 1; i < pts.length; i++) d += hav(pts[i - 1], pts[i]);
+      return d;
+    }
+
+    function bearingBetween(a, b) {
+      const dLng = (b[1] - a[1]) * DEG;
+      const y = Math.sin(dLng) * Math.cos(b[0] * DEG);
+      const x = Math.cos(a[0] * DEG) * Math.sin(b[0] * DEG) -
+                Math.sin(a[0] * DEG) * Math.cos(b[0] * DEG) * Math.cos(dLng);
+      return (Math.atan2(y, x) / DEG + 360) % 360;
+    }
+
+    // Search area: the two points plus a margin so the route has room to go around obstacles.
+    function planBox(a, b) {
+      const south = Math.min(a.lat, b.lat);
+      const north = Math.max(a.lat, b.lat);
+      const west = Math.min(a.lng, b.lng);
+      const east = Math.max(a.lng, b.lng);
+      const m = Math.max(0.3 * Math.max(north - south, east - west), 0.05);
+      return {
+        south: Math.max(south - m, -90), north: Math.min(north + m, 90),
+        west: Math.max(west - m, -180), east: Math.min(east + m, 180)
+      };
+    }
+
+    function blurGrid(e, rows, cols) {
+      const out = new Float32Array(e.length);
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          let sum = 0;
+          let n = 0;
+          for (let di = -1; di <= 1; di++) {
+            for (let dj = -1; dj <= 1; dj++) {
+              const ii = i + di;
+              const jj = j + dj;
+              if (ii < 0 || jj < 0 || ii >= rows || jj >= cols) continue;
+              sum += e[ii * cols + jj];
+              n++;
+            }
+          }
+          out[i * cols + j] = sum / n;
+        }
+      }
+      return out;
+    }
+
+    // Sample the decoded elevation on a regular lat/lon grid.
+    function buildGrid(canvas, region, box) {
+      const cosMid = Math.max(Math.cos((box.north + box.south) / 2 * DEG), 0.05);
+      const heightM = (box.north - box.south) * DEG * MARS_RADIUS;
+      const widthM = (box.east - box.west) * DEG * MARS_RADIUS * cosMid;
+      const longer = Math.max(heightM, widthM, 1);
+      const n = Math.max(20, Math.min(GRID_MAX_SIDE, Math.round(longer / GRID_MIN_CELL_M)));
+      const rows = Math.max(8, Math.round(n * heightM / longer) + 1);
+      const cols = Math.max(8, Math.round(n * widthM / longer) + 1);
+      const dLat = (box.north - box.south) / (rows - 1);
+      const dLng = (box.east - box.west) / (cols - 1);
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const data = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+      const sx = w / (region.east - region.west);
+      const sy = h / (region.north - region.south);
+      const ox = Math.max(1, dLng * sx / 4);
+      const oy = Math.max(1, dLat * sy / 4);
+
+      const elev = new Float32Array(rows * cols);
+      let sum = 0;
+      let valid = 0;
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          const px = (box.west + j * dLng - region.west) * sx;
+          const py = (region.north - (box.north - i * dLat)) * sy;
+          let s = 0;
+          let c = 0;
+          for (let a = -1; a <= 1; a++) {
+            for (let b = -1; b <= 1; b++) {
+              const x = Math.round(px + a * ox);
+              const y = Math.round(py + b * oy);
+              if (x < 0 || y < 0 || x >= w || y >= h) continue;
+              const k = (y * w + x) * 4;
+              if (data[k + 3] < 200) continue;
+              const v = decodeElevation(data[k], data[k + 1], data[k + 2]);
+              if (!isNaN(v)) { s += v; c++; }
+            }
+          }
+          if (c > 0) { elev[i * cols + j] = s / c; sum += s / c; valid++; }
+          else elev[i * cols + j] = NaN;
+        }
+      }
+      if (valid < 0.05 * rows * cols) return null;
+      const mean = sum / valid;
+      for (let q = 0; q < elev.length; q++) if (isNaN(elev[q])) elev[q] = mean;
+      let smooth = blurGrid(elev, rows, cols);
+      smooth = blurGrid(smooth, rows, cols);
+      return { box: box, rows: rows, cols: cols, dLat: dLat, dLng: dLng, elev: smooth };
+    }
+
+    function gridNode(grid, lat, lng) {
+      const i = Math.max(0, Math.min(grid.rows - 1, Math.round((grid.box.north - lat) / grid.dLat)));
+      const j = Math.max(0, Math.min(grid.cols - 1, Math.round((lng - grid.box.west) / grid.dLng)));
+      return [i, j];
+    }
+
+    function gridElevAt(grid, lat, lng) {
+      const b = grid.box;
+      if (lat < b.south || lat > b.north || lng < b.west || lng > b.east) return NaN;
+      const ij = gridNode(grid, lat, lng);
+      return grid.elev[ij[0] * grid.cols + ij[1]];
+    }
+
+    // A* over the grid. k = how strongly slopes and climbing are penalised (0 = shortest path).
+    function solveRoute(grid, a, b, k) {
+      const R = grid.rows;
+      const C = grid.cols;
+      const M = DEG * MARS_RADIUS;
+      const rowCos = [];
+      for (let i = 0; i < R; i++) {
+        rowCos.push(Math.max(Math.cos((grid.box.north - i * grid.dLat) * DEG), 0.05));
+      }
+      const stepY = grid.dLat * M;
+      const s = gridNode(grid, a.lat, a.lng);
+      const g = gridNode(grid, b.lat, b.lng);
+      const sIdx = s[0] * C + s[1];
+      const gIdx = g[0] * C + g[1];
+
+      const gScore = new Float64Array(R * C).fill(Infinity);
+      const came = new Int32Array(R * C).fill(-1);
+      const closed = new Uint8Array(R * C);
+
+      const hf = [];
+      const hn = [];
+      function swap(i, j) {
+        const tf = hf[i]; hf[i] = hf[j]; hf[j] = tf;
+        const tn = hn[i]; hn[i] = hn[j]; hn[j] = tn;
+      }
+      function push(f, n) {
+        let i = hf.length;
+        hf.push(f);
+        hn.push(n);
+        while (i > 0) {
+          const p = (i - 1) >> 1;
+          if (hf[p] <= hf[i]) break;
+          swap(i, p);
+          i = p;
+        }
+      }
+      function pop() {
+        const top = hn[0];
+        const lf = hf.pop();
+        const ln = hn.pop();
+        if (hf.length) {
+          hf[0] = lf;
+          hn[0] = ln;
+          let i = 0;
+          for (;;) {
+            const l = 2 * i + 1;
+            const r = l + 1;
+            let m = i;
+            if (l < hf.length && hf[l] < hf[m]) m = l;
+            if (r < hf.length && hf[r] < hf[m]) m = r;
+            if (m === i) break;
+            swap(i, m);
+            i = m;
+          }
+        }
+        return top;
+      }
+
+      function heuristic(i, j) {
+        const dy = Math.abs(i - g[0]) * stepY;
+        const dx = Math.abs(j - g[1]) * grid.dLng * M * Math.min(rowCos[i], rowCos[g[0]]);
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      gScore[sIdx] = 0;
+      push(heuristic(s[0], s[1]), sIdx);
+      while (hf.length) {
+        const cur = pop();
+        if (closed[cur]) continue;
+        closed[cur] = 1;
+        if (cur === gIdx) break;
+        const ci = (cur / C) | 0;
+        const cj = cur - ci * C;
+        for (let di = -1; di <= 1; di++) {
+          for (let dj = -1; dj <= 1; dj++) {
+            if (di === 0 && dj === 0) continue;
+            const ni = ci + di;
+            const nj = cj + dj;
+            if (ni < 0 || nj < 0 || ni >= R || nj >= C) continue;
+            const nIdx = ni * C + nj;
+            if (closed[nIdx]) continue;
+            const dx = dj !== 0 ? grid.dLng * M * 0.5 * (rowCos[ci] + rowCos[ni]) : 0;
+            const dy = di !== 0 ? stepY : 0;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d === 0) continue;
+            const dh = grid.elev[nIdx] - grid.elev[cur];
+            const slope = Math.abs(dh) / d;
+            const cost = d * (1 + k * 6 * Math.pow(Math.min(slope, 0.7), 2)) + k * 0.5 * Math.max(dh, 0);
+            const t = gScore[cur] + cost;
+            if (t < gScore[nIdx]) {
+              gScore[nIdx] = t;
+              came[nIdx] = cur;
+              push(t + heuristic(ni, nj), nIdx);
+            }
+          }
+        }
+      }
+      if (!isFinite(gScore[gIdx])) return null;
+
+      const nodes = [];
+      for (let n = gIdx; n !== -1; n = came[n]) nodes.push(n);
+      nodes.reverse();
+      return {
+        nodes: nodes,
+        pts: nodes.map(function (n) {
+          const i = (n / C) | 0;
+          const j = n - i * C;
+          return [grid.box.north - i * grid.dLat, grid.box.west + j * grid.dLng];
+        }),
+        elev: nodes.map(function (n) { return grid.elev[n]; })
+      };
+    }
+
+    // Round the grid's 8-direction zig-zag (end points stay where they are).
+    function chaikin(pts, iters) {
+      let p = pts;
+      for (let k = 0; k < iters; k++) {
+        if (p.length < 3) break;
+        const q = [p[0]];
+        for (let i = 0; i < p.length - 1; i++) {
+          const a = p[i];
+          const b = p[i + 1];
+          q.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]],
+                 [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]);
+        }
+        q.push(p[p.length - 1]);
+        p = q;
+      }
+      return p;
+    }
+
+    function profileStats(elevs) {
+      let gain = 0;
+      let loss = 0;
+      let lo = Infinity;
+      let hi = -Infinity;
+      let prev = NaN;
+      elevs.forEach(function (e) {
+        if (isNaN(e)) return;
+        if (!isNaN(prev)) {
+          if (e > prev) gain += e - prev; else loss += prev - e;
+        }
+        prev = e;
+        lo = Math.min(lo, e);
+        hi = Math.max(hi, e);
+      });
+      return { gain: gain, loss: loss, min: lo, max: hi };
+    }
+
+    function round10(v) { return Math.round(v / 10) * 10; }
+
+    let planJob = 0;
+    let terrainCache = null;   // { key, grid }
+    let routeStatus = '';
+
+    function avoidStrength() {
+      const v = parseFloat(document.getElementById('avoid').value);
+      return isNaN(v) ? 0 : v;
+    }
+
+    function straightRoute(straight) {
+      return { pts: straight.pts, distance: straight.distance, bearing: straight.bearing, terrain: false };
+    }
+
+    function finishPlan(job, straight, grid) {
+      if (job !== planJob || !dest) return;
+      if (!grid) {
+        route = straightRoute(straight);
+        routeStatus = 'Could not read the elevation data, so this is the straight line.';
+      } else if (straight.distance < 50) {
+        route = straightRoute(straight);
+        routeStatus = '';
+      } else {
+        const sol = solveRoute(grid, SITE, dest, avoidStrength());
+        if (!sol || sol.pts.length < 2) {
+          route = straightRoute(straight);
+          routeStatus = 'No terrain route found, showing the straight line.';
+        } else {
+          const raw = sol.pts.slice();
+          raw[0] = [SITE.lat, SITE.lng];
+          raw[raw.length - 1] = [dest.lat, dest.lng];
+          const pts = chaikin(raw, 2);
+          const st = profileStats(sol.elev);
+          const direct = profileStats(straight.pts.map(function (p) { return gridElevAt(grid, p[0], p[1]); }));
+          route = {
+            pts: pts,
+            distance: pathLength(pts),
+            bearing: bearingBetween(pts[0], pts[1]),
+            terrain: true,
+            gain: st.gain, loss: st.loss, min: st.min, max: st.max,
+            straight: { pts: straight.pts, distance: straight.distance, gain: direct.gain }
+          };
+          routeStatus = '';
+        }
+      }
+      renderRoute();
+    }
+
+    function planRoute() {
+      const job = ++planJob;
+      const straight = geodesic(SITE, dest);
+      const key = dest.lat.toFixed(5) + ',' + dest.lng.toFixed(5);
+      if (terrainCache && terrainCache.key === key) {
+        finishPlan(job, straight, terrainCache.grid);
+        return;
+      }
+      routeStatus = 'Planning a route over the terrain…';
+      updateRouteInfo();
+      const box = planBox(SITE, dest);
+      let z = ELEVATION_MAX_ZOOM;
+      while (z > MIN_ELEV_ZOOM) {
+        const tile = 360 / Math.pow(2, z + 1);
+        const cols = Math.ceil((box.east - box.west) / tile) + 1;
+        const rows = Math.ceil((box.north - box.south) / tile) + 1;
+        if (cols * rows <= MAX_REGION_TILES) break;
+        z--;
+      }
+      loadRegion(
+        ELEVATION_TILES, z, box,
+        function (canvas, region) {
+          if (job !== planJob) return;
+          let grid = null;
+          try {
+            grid = buildGrid(canvas, region, box);
+          } catch (err) {
+            console.warn('Could not read elevation pixels:', err);
+          }
+          terrainCache = grid ? { key: key, grid: grid } : null;
+          finishPlan(job, straight, grid);
+        },
+        function () {
+          if (job !== planJob) return;
+          terrainCache = null;
+          finishPlan(job, straight, null);
+        }
+      );
+    }
+
+    function updateRouteInfo() {
+      const box = document.getElementById('route-info');
+      if (!dest) { box.style.display = 'none'; box.innerHTML = ''; return; }
+      let html =
+        '<div>From: <b>Jezero (landing site)</b></div>' +
+        '<div>To: <b>' + fmtCoord(dest.lat, dest.lng) + '</b></div>';
+      if (route) {
+        const speed = Math.max(parseFloat(document.getElementById('speed').value) || 10, 0.1);
+        const hours = route.distance / 1000 / speed;
+        html += '<div>Distance: <b>' + formatDistance(route.distance) + '</b>' +
+          (route.terrain ? ' <span class="muted">(terrain-aware)</span>' : '') + '</div>';
+        if (route.terrain) {
+          html += '<div>Ascent / descent: <b>+' + round10(route.gain) + ' / −' + round10(route.loss) + ' m</b></div>' +
+            '<div>Highest / lowest: <b>' + round10(route.max) + ' / ' + round10(route.min) + ' m</b></div>' +
+            '<div class="muted">Direct line: ' + formatDistance(route.straight.distance) +
+            ', ascent +' + round10(route.straight.gain) + ' m (grey dotted)</div>';
+        }
+        html += '<div>Initial heading: <b>' + route.bearing.toFixed(0) + '° ' + compass(route.bearing) + '</b></div>' +
+          '<div>Travel time: <b>' + formatDuration(hours) + '</b></div>';
+        if (route.terrain) {
+          html += '<div class="muted">Elevations are decoded from the MOLA colours, so they are approximate.</div>';
+        }
+      }
+      if (routeStatus) html += '<div class="muted">' + routeStatus + '</div>';
+      box.style.display = 'block';
+      box.innerHTML = html;
+    }
+
+    // Rebuild everything drawn for the route (markers, direct line, terrain route).
+    function renderRoute() {
+      routeGroup.clearLayers();
+      if (dest) {
+        if (route && route.terrain && route.straight) {
+          L.polyline(splitAtAntimeridian(route.straight.pts), {
+            color: '#9aa4b5', weight: 2, opacity: 0.8, dashArray: '2 6'
+          }).addTo(routeGroup);
+        }
+        if (route) {
+          L.polyline(splitAtAntimeridian(route.pts), {
+            color: ROUTE_COLOR, weight: 4, opacity: 0.95, dashArray: route.terrain ? null : '8 6'
+          }).addTo(routeGroup);
+        }
+        L.marker([dest.lat, dest.lng], {
+          icon: L.divIcon({
+            className: '',
+            html: '<div class="dest-pin"></div>',
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+          })
+        })
+          .bindPopup(
+            '<b>Destination</b><br>' +
+            '<b>Coordinates:</b> ' + fmtCoord(dest.lat, dest.lng) +
+            (route ? '<br><b>Route length:</b> ' + formatDistance(route.distance) : '')
+          )
+          .addTo(routeGroup);
+      }
+      updateRouteInfo();
+      syncGlobeRoute();
+    }
+
+    function setDestination(lat, lng) {
+      dest = {
+        lat: Math.max(-90, Math.min(90, lat)),
+        lng: Math.max(-180, Math.min(180, lng))
+      };
+      route = null;
+      routeStatus = '';
+      setPickMode(false);
+      document.getElementById('route-hint').style.display = 'none';
+      renderRoute();
+      planRoute();
+    }
+
+    function clearRoute() {
+      planJob++;
+      dest = null;
+      route = null;
+      routeStatus = '';
+      setPickMode(false);
+      document.getElementById('route-hint').style.display = 'block';
+      renderRoute();
+    }
+
+    document.getElementById('pick-btn').addEventListener('click', function () {
+      setPickMode(!pickMode);
+    });
+    document.getElementById('clear-btn').addEventListener('click', clearRoute);
+    document.getElementById('speed').addEventListener('input', updateRouteInfo);
+    document.getElementById('avoid').addEventListener('input', function () {
+      if (!dest || !terrainCache) return;
+      const job = ++planJob;
+      finishPlan(job, geodesic(SITE, dest), terrainCache.grid);
+    });
+
+    map.on('click', function (e) {
+      if (!pickMode || globeActive) return;
+      setDestination(e.latlng.lat, e.latlng.lng);
     });
   </script>
 </body>
