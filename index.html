@@ -103,7 +103,7 @@
       pointer-events: none;
     }
 
-    /* ---------- layout: header + side panel + map ---------- */
+    
     header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     #side-toggle {
       background: #14192b; color: #f2e9e4; border: 1px solid #c1440e; border-radius: 4px;
@@ -154,7 +154,7 @@
       #side { position: absolute; z-index: 1000; top: 58px; bottom: 0; left: 0; max-width: 85%; }
     }
 
-    /* ---------- geologic unit names ---------- */
+    
     .unit-icon { pointer-events: none; }
     .unit-label {
       position: absolute;
@@ -171,10 +171,10 @@
     }
     .unit-label small { display: block; font-weight: normal; font-size: 11px; }
     .hide-units .unit-label { display: none; }
-    /* labels of places from the HiRISE photo sit a little above their dot */
+    
     .poi-label { transform: translate(-50%, -150%); }
 
-    /* ---------- legends (inside the side panel) ---------- */
+    
     .legend { color: #f2e9e4; font-size: 12px; line-height: 1.4; margin-bottom: 10px; }
     .legend .legend-title { font-weight: bold; color: #ff8c5a; margin-bottom: 6px; }
     .legend .row { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
@@ -185,7 +185,7 @@
     .legend .ramp { height: 12px; width: 100%; border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 2px; box-sizing: border-box; }
     .legend .ramp-labels { display: flex; justify-content: space-between; font-size: 11px; color: #b8c1d1; margin-top: 2px; }
 
-    /* ---------- coordinate inputs + site popups ---------- */
+    
     #side input[type=text], #side select {
       flex: 1; min-width: 0; width: 100%; box-sizing: border-box;
       background: #14192b; color: #f2e9e4; border: 1px solid #c1440e;
@@ -372,10 +372,10 @@
       )
       .addTo(map);
 
-    // Route (destination marker + path) lives in its own layer group.
+    
     const routeGroup = L.layerGroup().addTo(map);
 
-    // Names of the geological units around the crater (filled in below).
+    
     const unitLabels = L.layerGroup().addTo(map);
 
     const globeBase = L.layerGroup();
@@ -427,9 +427,9 @@
       document.getElementById('coords').textContent = 'Lat: --, Lon: --';
     });
 
-    // ---------- Elevation (MOLA) legend ----------
-    // Approximate colour/elevation pairs for the MOLA colour-shaded relief
-    // (elevation relative to the Mars datum). Values are indicative.
+    
+    
+    
     const MOLA_LEGEND = [
       { m: 21000, color: '#ffffff', note: 'Olympus Mons summit' },
       { m: 16000, color: '#b98c7a', note: '' },
@@ -455,18 +455,18 @@
       return html + '<div class="foot">Approximate values; colours are blended with shaded relief.</div></div>';
     }
 
-    // =====================================================================
-    // Thermal (THEMIS infrared) + hillshade layers
-    // =====================================================================
-    // These come from NASA Mars Trek. I could not confirm the exact tile names, so
-    // every layer below tries several candidate names and uses the first one that
-    // answers. If a layer says "unavailable" in the notes box, open
-    //   https://trek.nasa.gov/tiles/Mars/EQ/<LAYER_NAME>/1.0.0/WMTSCapabilities.xml
-    // for the right name, or paste a full tile URL into `override` below
-    // (it must contain {z} {y} {x}).
+    
+    
+    
+    
+    
+    
+    
+    
+    
     const TREK_ROOT = 'https://trek.nasa.gov/tiles/Mars/EQ/';
-    const RASTER_MAX_ZOOM = 8;          // finest zoom NASA serves for these layers (9 is a 404)
-    const PROBE_TILES = [{ z: 1, y: 0, x: 2 }, { z: 2, y: 1, x: 5 }, { z: 3, y: 2, x: 10 }];   // tiles that cover Jezero
+    const RASTER_MAX_ZOOM = 8;          
+    const PROBE_TILES = [{ z: 1, y: 0, x: 2 }, { z: 2, y: 1, x: 5 }, { z: 3, y: 2, x: 10 }];   
 
     function trekCandidates(names) {
       const out = [];
@@ -478,9 +478,9 @@
       return out;
     }
 
-    // The day layer name and the hillshade name were confirmed as working Trek tile sets
-    // (PNG, open CORS, zoom 0-8). The night name follows the same pattern (60N-60S mosaic);
-    // a few variants are tried automatically.
+    
+    
+    
     const SOURCES = {
       day: {
         label: 'THEMIS day IR',
@@ -522,7 +522,7 @@
       });
     }
 
-    // Find the first working tile template of a source (done once, then cached).
+    
     function probeSource(src) {
       if (src.ready) return src.ready;
       const list = (src.override ? [src.override] : []).concat(src.candidates);
@@ -538,7 +538,7 @@
       return src.ready;
     }
 
-    // Colour ramp for temperature: cold (dark blue) -> warm (white).
+    
     const THERMAL_STOPS = [
       [0.00, [12, 8, 90]], [0.17, [20, 80, 200]], [0.34, [20, 200, 210]],
       [0.50, [90, 220, 90]], [0.66, [250, 230, 40]], [0.82, [245, 110, 20]],
@@ -563,11 +563,11 @@
 
     function lum(r, g, b) { return 0.299 * r + 0.587 * g + 0.114 * b; }
 
-    // mode: 'heat' (one source, brightness -> colour), 'diff' (day minus night), 'gray' (as is)
+    
     function colorizeData(a, b) {
       for (let i = 0; i < a.length; i += 4) {
         const l = lum(a[i], a[i + 1], a[i + 2]);
-        let ok = a[i + 3] > 10 && l > 2;       // black / transparent = no data
+        let ok = a[i + 3] > 10 && l > 2;       
         let v;
         if (b) {
           const l2 = lum(b[i], b[i + 1], b[i + 2]);
@@ -582,7 +582,7 @@
       }
     }
 
-    // Draw one or two images (or canvases) onto `canvas`, coloured according to mode.
+    
     function paintCanvas(canvas, srcs, mode) {
       const w = canvas.width;
       const h = canvas.height;
@@ -607,7 +607,7 @@
       c.putImageData(d, 0, 0);
     }
 
-    // A tile layer whose tiles are coloured in the browser.
+    
     const RasterLayer = L.GridLayer.extend({
       initialize: function (opts) {
         L.GridLayer.prototype.initialize.call(this, opts);
@@ -671,7 +671,7 @@
         '<div class="foot">' + foot + '</div></div>';
     }
 
-    // Séítah mineral layers (filled in near the end of the script).
+    
     const SEITAH_STATE = { minerals: null, terrain: null };
 
     function seitahLegendHtml() {
@@ -704,7 +704,7 @@
       if (globeActive) refreshGlobeTexture();
     });
 
-    // ---------- 3D globe ----------
+    
     const SITE = { lat: 18.4446, lng: 77.4509 };
     const IMAGERY_TILES =
       'https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg';
@@ -713,19 +713,19 @@
     const CTX_TILES =
       'https://trek.nasa.gov/tiles/Mars/EQ/Jezero_CTX_BlockAdj_dd/1.0.0/default/default028mm/{z}/{y}/{x}.png';
 
-    const GLOBE_ZOOM = 3;          // whole-planet texture
+    const GLOBE_ZOOM = 3;          
     const GLOBE_FOV = 50;
-    const IMAGERY_MAX_ZOOM = 7;    // finest level NASA provides for the global mosaic
+    const IMAGERY_MAX_ZOOM = 7;    
     const ELEVATION_MAX_ZOOM = 6;
     const FULL_BOX = { south: -90, north: 90, west: -180, east: 180 };
 
-    const PATCH_ZOOM = 10;         // Jezero CTX patch
+    const PATCH_ZOOM = 10;         
     const PATCH_BOX = { south: 17.45, north: 19.45, west: 76.45, east: 78.45 };
     const PATCH_TRIGGER_ALTITUDE = 1.0;
 
-    const DETAIL_MIN_ZOOM = 5;     // sharper imagery that follows the camera
+    const DETAIL_MIN_ZOOM = 5;     
     const DETAIL_MAX_TILES = 160;
-    const DETAIL_MAX_SIDE = 16;    // tiles per side, keeps the texture under 4096 px
+    const DETAIL_MAX_SIDE = 16;    
     const DETAIL_DELAY = 350;
 
     const ROUTE_COLOR = '#4dd2ff';
@@ -757,11 +757,11 @@
     let detailJob = 0;
     let detailTimer = null;
 
-    // route state
-    let dest = null;        // { lat, lng }
-    let route = null;       // { pts, distance, bearing }
-    let pickMode = null;      // null | 'start' | 'dest'
-    let start = { lat: SITE.lat, lng: SITE.lng, custom: false };  // route origin, defaults to Jezero
+    
+    let dest = null;        
+    let route = null;       
+    let pickMode = null;      
+    let start = { lat: SITE.lat, lng: SITE.lng, custom: false };  
 
     function setGlobeMessage(text) {
       const msg = document.getElementById('globe-msg');
@@ -773,8 +773,8 @@
       return { w: box.clientWidth, h: box.clientHeight };
     }
 
-    // ----- tile loading -----
-    // Whole-planet mosaic: every tile at one zoom level, drawn on one canvas.
+    
+    
     function loadTileCanvas(template, onDone, onFail) {
       const cols = Math.pow(2, GLOBE_ZOOM + 1);
       const rows = Math.pow(2, GLOBE_ZOOM);
@@ -802,7 +802,7 @@
       }
     }
 
-    // One region of the planet at a chosen zoom. Missing tiles stay transparent.
+    
     function loadRegion(template, zoom, box, onDone, onFail) {
       const size = 360 / Math.pow(2, zoom + 1);
       const x0 = Math.floor((box.west + 180) / size);
@@ -846,7 +846,7 @@
       }
     }
 
-    // Draw one region canvas on top of another, matching latitude and longitude.
+    
     function drawRegion(c, targetCanvas, targetRegion, srcCanvas, srcRegion, alpha, operation) {
       const sx = targetCanvas.width / (targetRegion.east - targetRegion.west);
       const sy = targetCanvas.height / (targetRegion.north - targetRegion.south);
@@ -861,7 +861,7 @@
       c.globalCompositeOperation = 'source-over';
     }
 
-    // ----- whole-planet texture -----
+    
     function composeTexture() {
       if (!composeCanvas) {
         composeCanvas = document.createElement('canvas');
@@ -871,7 +871,7 @@
       const c = composeCanvas.getContext('2d');
       c.globalAlpha = 1;
       c.drawImage(imageryCanvas, 0, 0);
-      // thermal / hillshade layers that are switched on
+      
       rasterLayers.forEach(function (tl) {
         if (map.hasLayer(tl) && tl._globe) {
           c.globalAlpha = tl.options.opacity;
@@ -903,7 +903,7 @@
       globe.globeImageUrl(canvas.toDataURL('image/jpeg', 0.9));
     }
 
-    // Build the whole-planet (coloured) texture of a thermal/hillshade layer for the globe.
+    
     function buildGlobeRaster(layer) {
       if (layer._globe || layer._globeLoading) return;
       layer._globeLoading = true;
@@ -939,7 +939,7 @@
       });
     }
 
-    // ----- patches: textured pieces of sphere laid over the globe -----
+    
     function findGlobeMesh() {
       let found = null;
       const material = globe.globeMaterial();
@@ -984,7 +984,7 @@
       }
     }
 
-    // ----- Jezero CTX patch (fixed area, very sharp) -----
+    
     function composePatch() {
       const c = patchCompose.getContext('2d');
       c.globalCompositeOperation = 'source-over';
@@ -1003,7 +1003,7 @@
       patchMesh.material.map.needsUpdate = true;
     }
 
-    // The sharp patches would hide the thermal layers, so they step aside while one is on.
+    
     function patchShouldShow() {
       return map.hasLayer(ctx) && !rasterActive();
     }
@@ -1070,7 +1070,7 @@
       if (patchMesh) patchMesh.visible = patchShouldShow();
     }
 
-    // ----- detail patch: sharper global imagery around wherever the camera looks -----
+    
     function neededDetail() {
       const pov = globe.pointOfView();
       const size = globeSize();
@@ -1150,7 +1150,7 @@
     function updateDetail() {
       detailTimer = null;
       if (!globe || !globeActive) return;
-      // With a thermal layer on, use the global texture only (detail imagery would cover it).
+      
       const need = rasterActive() ? null : neededDetail();
       detailJob++;
       if (!need) {
@@ -1170,7 +1170,7 @@
       detailTimer = setTimeout(updateDetail, DETAIL_DELAY);
     }
 
-    // ----- layer / scale sync -----
+    
     function syncGlobeElevation() {
       if (!globe) return;
       if (map.hasLayer(elevation) && !elevationCanvas) {
@@ -1198,7 +1198,7 @@
       scheduleDetail();
     }
 
-    // Landing-site marker + destination marker on the globe.
+    
     function syncGlobeSite() {
       if (!globe) return;
       const visible = map.hasLayer(site);
@@ -1214,7 +1214,7 @@
       globe.ringsData(visible ? [SITE] : []);
     }
 
-    // Route line on the globe.
+    
     function syncGlobeRoute() {
       if (!globe) return;
       syncGlobeSite();
@@ -1364,15 +1364,15 @@
       }
     });
 
-    // ---------- Geologic unit names ----------
-    // Label positions were read off the NASA/JPL geologic map of Jezero (PIA23976):
-    // pixel offsets from the centre of the green landing ellipse, converted with the
-    // map's scale bar (66 px per km) and anchored at the landing site. They are
-    // approximate (roughly +/- 1 km); edit `px` below to nudge a label.
+    
+    
+    
+    
+    
     const UNIT_PX_PER_KM = 66;
     const UNIT_CENTER_PX = [996, 576];
-    const UNIT_MIN_ZOOM = 8;                 // 2D map: hide names when zoomed out
-    const UNIT_GLOBE_MAX_ALTITUDE = 0.12;    // globe: show names only when close
+    const UNIT_MIN_ZOOM = 8;                 
+    const UNIT_GLOBE_MAX_ALTITUDE = 0.12;    
 
     const JEZERO_UNITS = [
       { name: 'Outside Jezero', sub: '(Midway/NES)', px: [100, 436], color: '#9fe870' },
@@ -1384,7 +1384,7 @@
 
     const KM_PER_DEG = MARS_RADIUS * Math.PI / 180 / 1000;
 
-    // km east / north of the landing site -> latitude / longitude
+    
     function kmToLatLng(east, north) {
       return {
         lat: SITE.lat + north / KM_PER_DEG,
@@ -1421,19 +1421,19 @@
     map.on('zoomend', syncUnitZoom);
     syncUnitZoom();
 
-    // ---------- Places from the HiRISE photo (NASA PIA24814) ----------
-    // The photo is not georeferenced, so I placed it by hand:
-    //  - the yellow "Perseverance Rover" dot is treated as the landing site (it sits
-    //    ~2.4 km from Kodiak, which matches the published distance), and
-    //  - the scale bar (400 m) gives about 8 m per pixel on the 1041 px wide copy.
-    // Switch on "HiRISE photo" in the layer list to check the alignment against the CTX
-    // map, then tweak PIA.mPerPx / PIA.anchorPx below if you want it tighter.
+    
+    
+    
+    
+    
+    
+    
     const PIA = {
       url: 'https://www.nasa.gov/wp-content/uploads/2021/10/pia24814-3-1041.jpg',
       w: 1041,
       h: 440,
       mPerPx: 8,
-      anchorPx: [498, 330]   // pixel of the yellow rover dot = landing site
+      anchorPx: [498, 330]   
     };
 
     function piaToLatLng(px, py) {
@@ -1457,7 +1457,7 @@
               'its layers show how the delta grew into the ancient lake.' }
     ];
 
-    // Unnamed things visible in the photo (my own labels, not official names).
+    
     const PIA_OTHER = [
       { name: 'Mound 1', px: [755, 70], info: 'Unnamed mound / butte (upper right of the photo).' },
       { name: 'Mound 2', px: [803, 160], info: 'Unnamed mound / butte.' },
@@ -1466,9 +1466,9 @@
       { name: 'Crater 2', px: [594, 245], info: 'Small unnamed impact crater.' }
     ];
 
-    const poiLayer = L.layerGroup().addTo(map);       // named places
-    const poiOther = L.layerGroup();                  // unnamed features
-    const scarpLine = L.layerGroup().addTo(map);      // line along the delta scarps
+    const poiLayer = L.layerGroup().addTo(map);       
+    const poiOther = L.layerGroup();                  
+    const scarpLine = L.layerGroup().addTo(map);      
 
     function addPoi(p, group, named) {
       const pos = piaToLatLng(p.px[0], p.px[1]);
@@ -1497,7 +1497,7 @@
       }).addTo(group);
     }
 
-    // fmtCoord is a function declaration further down, so it is available here.
+    
     PIA_POINTS.forEach(function (p) { addPoi(p, poiLayer, true); });
     PIA_OTHER.forEach(function (p) { addPoi(p, poiOther, false); });
 
@@ -1526,7 +1526,7 @@
       }
     });
 
-    // ---------- Side panel wiring ----------
+    
     const LAYER_MAP = {
       thermDay: thermDay, thermNight: thermNight, thermDiff: thermDiff, hillshade: hillshade,
       elevation: elevation, ctx: ctx, site: site, unitLabels: unitLabels,
@@ -1535,7 +1535,7 @@
     };
     const overlayRegistry = new Set(Object.keys(LAYER_MAP).map(function (k) { return LAYER_MAP[k]; }));
 
-    // Tell the rest of the code when one of these layers is switched on or off.
+    
     map.on('layeradd', function (e) {
       if (overlayRegistry.has(e.layer)) map.fire('overlayadd', { layer: e.layer });
     });
@@ -1563,7 +1563,7 @@
     });
     syncChecks();
 
-    // Flat map / 3D globe buttons
+    
     function setBase(name) {
       const target = name === 'globe' ? globeBase : imagery;
       const other = name === 'globe' ? imagery : globeBase;
@@ -1578,7 +1578,7 @@
       b.addEventListener('click', function () { setBase(b.dataset.base); });
     });
 
-    // Grey out a temperature / hillshade row if NASA's tiles cannot be reached.
+    
     const SOURCE_ROWS = { day: ['thermDay', 'thermDiff'], night: ['thermNight', 'thermDiff'], shade: ['hillshade'] };
     Object.keys(SOURCE_ROWS).forEach(function (key) {
       probeSource(SOURCES[key]).then(function (tpl) {
@@ -1591,7 +1591,7 @@
       });
     });
 
-    // Show / hide the side panel
+    
     document.getElementById('side-toggle').addEventListener('click', function () {
       document.body.classList.toggle('side-hidden');
       setTimeout(function () {
@@ -1603,7 +1603,7 @@
 
     renderLegends();
 
-    // Names shown on the globe (units, HiRISE places and the mission-site layers).
+    
     function activeSiteItems() {
       let out = [];
       SITE_GROUPS.forEach(function (g) { if (map.hasLayer(g.group)) out = out.concat(g.items); });
@@ -1622,7 +1622,7 @@
       globe.labelsData((u ? JEZERO_UNITS : []).concat(p ? PIA_POINTS : []).concat(sites));
     }
 
-    // ---------- Route planner ----------
+    
     const DEG = Math.PI / 180;
 
     function toVec(lat, lng) {
@@ -1633,7 +1633,7 @@
       ];
     }
 
-    // Shortest path on the sphere (great circle) between two points.
+    
     function geodesic(a, b) {
       const A = toVec(a.lat, a.lng);
       const B = toVec(b.lat, b.lng);
@@ -1663,7 +1663,7 @@
       return { pts: pts, distance: distance, bearing: bearing };
     }
 
-    // Split the path where it crosses the ±180° meridian so Leaflet doesn't draw across the map.
+    
     function splitAtAntimeridian(pts) {
       const parts = [[pts[0]]];
       for (let i = 1; i < pts.length; i++) {
@@ -1706,31 +1706,119 @@
       if (mode && !map.hasLayer(routeGroup)) routeGroup.addTo(map);
     }
 
-    // ---------- Terrain-aware planning ----------
-    // Elevation is decoded from the MOLA colour tiles (the same ones shown by the
-    // "Elevation (MOLA)" layer), put on a grid, and searched with A*. Steep and
-    // uphill steps cost extra, so the route bends around crater walls and ridges.
-    const GRID_MAX_SIDE = 160;
-    const GRID_MIN_CELL_M = 300;
+    
+    
+    
+    
+    
+    const GRID_MAX_SIDE = 240;
+    const GRID_MIN_CELL_M = 160;
     const MAX_REGION_TILES = 100;
     const MIN_ELEV_ZOOM = 2;
+
+    
+    
+    
+    
+    const SUN_ALT = 45 * DEG;
+    const SHADE_GAIN = 1.5;
+
+    function shadeToSlope(canvas, region, grid) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const data = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+      const sx = w / (region.east - region.west);
+      const sy = h / (region.north - region.south);
+      const ox = Math.max(1, grid.dLng * sx / 3);
+      const oy = Math.max(1, grid.dLat * sy / 3);
+      const R = grid.rows;
+      const C = grid.cols;
+      const L2 = new Float32Array(R * C);
+      const vals = [];
+      for (let i = 0; i < R; i++) {
+        for (let j = 0; j < C; j++) {
+          const px = (grid.box.west + j * grid.dLng - region.west) * sx;
+          const py = (region.north - (grid.box.north - i * grid.dLat)) * sy;
+          let s = 0;
+          let c = 0;
+          for (let a = -1; a <= 1; a++) {
+            for (let b = -1; b <= 1; b++) {
+              const x = Math.round(px + a * ox);
+              const y = Math.round(py + b * oy);
+              if (x < 0 || y < 0 || x >= w || y >= h) continue;
+              const k = (y * w + x) * 4;
+              if (data[k + 3] < 200) continue;
+              const l = lum(data[k], data[k + 1], data[k + 2]);
+              if (l < 2) continue;
+              s += l;
+              c++;
+            }
+          }
+          if (c > 0) { L2[i * C + j] = s / c; vals.push(s / c); } else L2[i * C + j] = NaN;
+        }
+      }
+      if (vals.length < 0.2 * R * C) return null;
+      vals.sort(function (p, q) { return p - q; });
+      const flat = vals[vals.length >> 1];
+      const gain = SHADE_GAIN / (255 * Math.cos(SUN_ALT));
+      const raw = new Float32Array(R * C);
+      for (let q = 0; q < raw.length; q++) {
+        raw[q] = isNaN(L2[q]) ? 0 : Math.min(1.2, Math.abs(L2[q] - flat) * gain);
+      }
+      const out = new Float32Array(R * C);
+      for (let i = 0; i < R; i++) {
+        for (let j = 0; j < C; j++) {
+          let m = 0;
+          for (let di = -1; di <= 1; di++) {
+            for (let dj = -1; dj <= 1; dj++) {
+              const ii = i + di;
+              const jj = j + dj;
+              if (ii < 0 || jj < 0 || ii >= R || jj >= C) continue;
+              m = Math.max(m, raw[ii * C + jj]);
+            }
+          }
+          out[i * C + j] = m;
+        }
+      }
+      return out;
+    }
+
+    function buildShadeSlope(box, grid) {
+      return probeSource(SOURCES.shade).then(function (tpl) {
+        if (!tpl) return null;
+        let z = RASTER_MAX_ZOOM;
+        while (z > 3) {
+          const tile = 360 / Math.pow(2, z + 1);
+          const c = Math.ceil((box.east - box.west) / tile) + 1;
+          const r = Math.ceil((box.north - box.south) / tile) + 1;
+          if (c * r <= MAX_REGION_TILES) break;
+          z--;
+        }
+        return new Promise(function (resolve) {
+          loadRegion(tpl, z, box, function (canvas, region) {
+            try { resolve(shadeToSlope(canvas, region, grid)); }
+            catch (err) { console.warn('Could not read hillshade pixels:', err); resolve(null); }
+          }, function () { resolve(null); });
+        });
+      });
+    }
 
     function hexToRgb(h) {
       return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
     }
 
-    // Brightness-normalised legend colours (white is skipped: grey pixels are ambiguous).
+    
     const DECODE = MOLA_LEGEND.slice(1).map(function (s) {
       const c = hexToRgb(s.color);
       const mx = Math.max(c[0], c[1], c[2]);
       return { m: s.m, n: [c[0] / mx, c[1] / mx, c[2] / mx] };
     });
 
-    // Colour -> elevation by projecting onto the legend's colour ramp.
+    
     function decodeElevation(r, g, b) {
       const mx = Math.max(r, g, b);
-      if (mx < 20) return NaN;                                   // empty / transparent
-      if ((mx - Math.min(r, g, b)) / mx < 0.12) return NaN;      // grey: ambiguous
+      if (mx < 20) return NaN;                                   
+      if ((mx - Math.min(r, g, b)) / mx < 0.12) return NaN;      
       const p = [r / mx, g / mx, b / mx];
       let best = Infinity;
       let elev = NaN;
@@ -1772,13 +1860,13 @@
       return (Math.atan2(y, x) / DEG + 360) % 360;
     }
 
-    // Search area: the two points plus a margin so the route has room to go around obstacles.
+    
     function planBox(a, b) {
       const south = Math.min(a.lat, b.lat);
       const north = Math.max(a.lat, b.lat);
       const west = Math.min(a.lng, b.lng);
       const east = Math.max(a.lng, b.lng);
-      const m = Math.max(0.3 * Math.max(north - south, east - west), 0.05);
+      const m = Math.max(0.5 * Math.max(north - south, east - west), 0.08);
       return {
         south: Math.max(south - m, -90), north: Math.min(north + m, 90),
         west: Math.max(west - m, -180), east: Math.min(east + m, 180)
@@ -1806,7 +1894,7 @@
       return out;
     }
 
-    // Sample the decoded elevation on a regular lat/lon grid.
+    
     function buildGrid(canvas, region, box) {
       const cosMid = Math.max(Math.cos((box.north + box.south) / 2 * DEG), 0.05);
       const heightM = (box.north - box.south) * DEG * MARS_RADIUS;
@@ -1855,7 +1943,7 @@
       for (let q = 0; q < elev.length; q++) if (isNaN(elev[q])) elev[q] = mean;
       let smooth = blurGrid(elev, rows, cols);
       smooth = blurGrid(smooth, rows, cols);
-      return { box: box, rows: rows, cols: cols, dLat: dLat, dLng: dLng, elev: smooth };
+      return { box: box, rows: rows, cols: cols, dLat: dLat, dLng: dLng, elev: smooth, shade: null };
     }
 
     function gridNode(grid, lat, lng) {
@@ -1871,7 +1959,7 @@
       return grid.elev[ij[0] * grid.cols + ij[1]];
     }
 
-    // A* over the grid. k = how strongly slopes and climbing are penalised (0 = shortest path).
+    
     function solveRoute(grid, a, b, k) {
       const R = grid.rows;
       const C = grid.cols;
@@ -1957,8 +2045,12 @@
             const d = Math.sqrt(dx * dx + dy * dy);
             if (d === 0) continue;
             const dh = grid.elev[nIdx] - grid.elev[cur];
-            const slope = Math.abs(dh) / d;
-            const cost = d * (1 + k * 6 * Math.pow(Math.min(slope, 0.7), 2)) + k * 0.5 * Math.max(dh, 0);
+            const es = Math.abs(dh) / d;                       
+            const sh = grid.shade ? Math.max(grid.shade[cur], grid.shade[nIdx]) : 0;   
+            const slope = grid.shade ? Math.max(sh, 0.5 * es) : es;
+            const sl = Math.min(slope, 1.2);
+            
+            const cost = d * (1 + k * 6 * sl * sl + k * 40 * Math.max(0, sl - 0.3)) + k * 0.25 * Math.max(dh, 0);
             const t = gScore[cur] + cost;
             if (t < gScore[nIdx]) {
               gScore[nIdx] = t;
@@ -1984,7 +2076,7 @@
       };
     }
 
-    // Round the grid's 8-direction zig-zag (end points stay where they are).
+    
     function chaikin(pts, iters) {
       let p = pts;
       for (let k = 0; k < iters; k++) {
@@ -2023,7 +2115,7 @@
     function round10(v) { return Math.round(v / 10) * 10; }
 
     let planJob = 0;
-    let terrainCache = null;   // { key, grid }
+    let terrainCache = null;   
     let routeStatus = '';
 
     function avoidStrength() {
@@ -2033,6 +2125,17 @@
 
     function straightRoute(straight) {
       return { pts: straight.pts, distance: straight.distance, bearing: straight.bearing, terrain: false };
+    }
+
+    
+    function maxSlopeAlong(grid, list) {
+      if (!grid.shade) return NaN;
+      let m = 0;
+      list.forEach(function (p) {
+        const ij = gridNode(grid, p[0], p[1]);
+        m = Math.max(m, grid.shade[ij[0] * grid.cols + ij[1]]);
+      });
+      return Math.atan(m) / DEG;
     }
 
     function finishPlan(job, straight, grid) {
@@ -2061,9 +2164,11 @@
             bearing: bearingBetween(pts[0], pts[1]),
             terrain: true,
             gain: st.gain, loss: st.loss, min: st.min, max: st.max,
+            maxSlope: maxSlopeAlong(grid, sol.pts),
+            straightSlope: maxSlopeAlong(grid, straight.pts),
             straight: { pts: straight.pts, distance: straight.distance, gain: direct.gain }
           };
-          routeStatus = '';
+          routeStatus = grid.shade ? '' : 'Fine slope data unavailable; using elevation colours only.';
         }
       }
       renderRoute();
@@ -2102,8 +2207,15 @@
           } catch (err) {
             console.warn('Could not read elevation pixels:', err);
           }
-          terrainCache = grid ? { key: key, grid: grid } : null;
-          finishPlan(job, straight, grid);
+          const done = function () {
+            if (job !== planJob) return;
+            terrainCache = grid ? { key: key, grid: grid } : null;
+            finishPlan(job, straight, grid);
+          };
+          if (!grid) { done(); return; }
+          routeStatus = 'Reading fine slope data…';
+          updateRouteInfo();
+          buildShadeSlope(box, grid).then(function (sl) { grid.shade = sl; done(); }, function () { done(); });
         },
         function () {
           if (job !== planJob) return;
@@ -2127,6 +2239,9 @@
         if (route.terrain) {
           html += '<div>Ascent / descent: <b>+' + round10(route.gain) + ' / −' + round10(route.loss) + ' m</b></div>' +
             '<div>Highest / lowest: <b>' + round10(route.max) + ' / ' + round10(route.min) + ' m</b></div>' +
+            (isNaN(route.maxSlope) ? '' :
+              '<div>Steepest slope (est.): <b>' + route.maxSlope.toFixed(0) + '°</b> ' +
+              '<span class="muted">(direct line: ' + route.straightSlope.toFixed(0) + '°)</span></div>') +
             '<div class="muted">Direct line: ' + formatDistance(route.straight.distance) +
             ', ascent +' + round10(route.straight.gain) + ' m (grey dotted)</div>';
         }
@@ -2141,7 +2256,7 @@
       box.innerHTML = html;
     }
 
-    // Rebuild everything drawn for the route (markers, direct line, terrain route).
+    
     function renderRoute() {
       routeGroup.clearLayers();
       if (start.custom) {
@@ -2242,12 +2357,12 @@
       finishPlan(job, geodesic(start, dest), terrainCache.grid);
     });
 
-    // =====================================================================
-    // Mission sites (layers) + coordinate input for the route planner
-    // =====================================================================
-    // e / n = km east / north of the landing site. These are APPROXIMATE (about ±1 km),
-    // taken from the names on NASA's route maps (PIA24596, PIA25173), not read pixel by
-    // pixel. Edit e / n to correct a position.
+    
+    
+    
+    
+    
+    
     const SITE_GROUPS = [
       { id: 'c1', title: 'Campaign 1 · Crater Floor', color: '#ffa38f', items: [
         { name: 'Séítah', e: -1.4, n: -0.9,
@@ -2280,7 +2395,7 @@
     PIA_OTHER.forEach(function (p) { regSite(p, 'Other features (unnamed)'); });
     JEZERO_UNITS.forEach(function (u) { regSite(u, 'Geologic units (approx. centre)'); });
 
-    // The landing-site marker gets the same Start / Destination buttons.
+    
     site.unbindPopup().bindPopup(function () {
       return '<b>Site:</b> Jezero Crater<br>' +
         '<b>Rover:</b> Perseverance<br>' +
@@ -2289,7 +2404,7 @@
         siteButtons(0);
     });
 
-    // "Start" / "Destination" buttons used in every point's popup.
+    
     function siteButtons(idx) {
       return '<div class="popup-btns">' +
         '<button onclick="useSite(' + idx + ',\'start\')">🟢 Start</button>' +
@@ -2325,7 +2440,7 @@
       g.group.addTo(map);
     });
 
-    // ----- layer checkboxes -----
+    
     (function buildSitesPanel() {
       const box = document.getElementById('sites-box');
       SITE_GROUPS.forEach(function (g) {
@@ -2351,7 +2466,7 @@
       syncGlobeLabels();
     });
 
-    // ----- named-site dropdown -----
+    
     (function buildSiteSelect() {
       const sel = document.getElementById('site-select');
       let og = null;
@@ -2398,9 +2513,9 @@
       useSite(document.getElementById('site-select').value, 'dest');
     });
 
-    // ----- coordinate parsing -----
-    // Accepts: "18.44, 77.45"   "18.44N 77.45E"   "18.44 N, 282.5 E"   "-18.4 77.4"
-    // Latitude first. Longitudes above 180 (0–360°E) are converted to -180…180.
+    
+    
+    
     function parseCoords(str) {
       const s = String(str).toUpperCase().replace(/[°,;]/g, ' ').replace(/\s+/g, ' ').trim();
       const re = /(-?\d+(?:\.\d+)?)\s*([NSEW])?/g;
@@ -2467,18 +2582,18 @@
       });
     });
 
-    // =====================================================================
-    // Séítah mineral map + route map (NASA PIA25024), as image layers
-    // =====================================================================
-    // The picture has two panels side by side: left = terrain + first-campaign route,
-    // right = igneous mineral map. It is NOT georeferenced, so the place on the map is a
-    // first guess. Use the "Align to the map" numbers in the panel, then copy the final
-    // values here. (Each panel is assumed to be half the image width.)
+    
+    
+    
+    
+    
+    
+    
     const SEITAH = {
       url: 'https://assets.science.nasa.gov/content/dam/science/psd/mars/downloadable_items/4/6/46856_PIA25024.jpg',
       w: 2486, h: 1078,
-      e: -1.4, n: -0.9,      // km east / north of the landing site = centre of the panel
-      widthKm: 6             // width of ONE panel on the ground
+      e: -1.4, n: -0.9,      
+      widthKm: 6             
     };
 
     function seitahBounds() {
@@ -2544,7 +2659,7 @@
       map.fitBounds(seitahBounds().pad(0.1), { maxZoom: 12 });
     });
 
-    // keep the Séítah checkboxes in sync with the layers
+    
     map.on('layeradd layerremove', function (e) {
       if (e.layer !== SEITAH_STATE.terrain && e.layer !== SEITAH_STATE.minerals) return;
       document.querySelectorAll('input[data-sl]').forEach(function (box) {
