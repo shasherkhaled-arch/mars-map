@@ -148,6 +148,60 @@
     }
     #route-info { margin-top: 8px; border-top: 1px solid rgba(193, 68, 14, 0.5); padding-top: 6px; display: none; }
     #route-info b { color: #4dd2ff; }
+    .offline-status {
+      margin: 0 0 8px; padding: 8px 9px; border: 1px solid rgba(77, 210, 145, 0.65);
+      border-radius: 6px; color: #a4f4c9; background: rgba(24, 100, 67, 0.18);
+      font-size: 11px; line-height: 1.45;
+    }
+    .offline-status strong { display: block; color: #8ff0b8; font-size: 11px; }
+    .offline-status small { display: block; margin-top: 4px; color: #aeb8c8; font-size: 10px; }
+    .survival-card {
+      margin-top: 9px; padding: 9px; border: 1px solid rgba(77, 210, 255, 0.35);
+      border-radius: 6px; background: rgba(9, 18, 30, 0.82);
+    }
+    .survival-heading { margin-bottom: 7px; color: #ffb184; font-size: 11px; font-weight: bold; letter-spacing: .04em; }
+    .survival-status {
+      margin: 0 0 8px; padding: 8px; border: 1px solid transparent;
+      border-radius: 5px; font-size: 11px; font-weight: bold; line-height: 1.45;
+    }
+    .survival-status.hazard { color: #ffd1d1; background: rgba(180, 35, 45, 0.22); border-color: #ff5f67; }
+    .survival-status.safe { color: #a7f2be; background: rgba(23, 122, 67, 0.2); border-color: #43c879; }
+    .survival-status.unknown { color: #ffe0a4; background: rgba(163, 111, 25, 0.18); border-color: #c9973e; }
+    .survival-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .survival-metric {
+      min-width: 0; padding: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(184, 193, 209, 0.12);
+    }
+    .survival-metric span { display: block; color: #b8c1d1; font-size: 10px; }
+    .survival-metric strong { display: block; margin-top: 3px; color: #f2e9e4; font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .survival-metric strong.over-capacity { color: #ff737a; }
+    .battery-track { height: 5px; margin-top: 6px; overflow: hidden; border-radius: 8px; background: #303748; }
+    .battery-fill { height: 100%; border-radius: 8px; background: #4dd2a0; }
+    .survival-note { margin-top: 7px; color: #8d97aa; font-size: 10px; line-height: 1.45; }
+    .battery-config, .simulation-card {
+      margin-top: 9px; padding: 9px; border: 1px solid rgba(193, 68, 14, 0.45);
+      border-radius: 6px; background: rgba(20, 25, 43, 0.72);
+    }
+    .battery-config .speed-row label { min-width: 92px; }
+    .battery-config input[type=number] { flex: 1; width: 54px; min-width: 0; }
+    .battery-level-label { margin-top: 4px; font-size: 11px; color: #a7f2be; font-variant-numeric: tabular-nums; }
+    .simulation-card .btn-row { margin-top: 6px; }
+    .simulation-card button { font-size: 11px; }
+    .simulation-card button:disabled { opacity: .45; cursor: not-allowed; }
+    .sim-speed-value { min-width: 34px; text-align: right; color: #ffb184; font-weight: bold; }
+    .sim-status { margin: 7px 0; font-size: 11px; color: #b8c1d1; }
+    .telemetry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .telemetry-metric { min-width: 0; padding: 7px; border: 1px solid rgba(184,193,209,.14); border-radius: 4px; background: rgba(255,255,255,.035); }
+    .telemetry-metric span { display: block; color: #8d97aa; font-size: 10px; }
+    .telemetry-metric strong { display: block; margin-top: 3px; color: #f2e9e4; font-size: 12px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .sim-hazard { margin-top: 7px; padding: 7px; border-radius: 4px; font-size: 11px; line-height: 1.4; }
+    .sim-hazard.risk { background: rgba(180,35,45,.25); border: 1px solid #ff5f67; color: #ffd1d1; }
+    .sim-hazard.nominal { background: rgba(23,122,67,.18); border: 1px solid #43c879; color: #a7f2be; }
+    .sim-hazard.unknown { background: rgba(163,111,25,.18); border: 1px solid #c9973e; color: #ffe0a4; }
+    .rover-marker-shell { width: 34px; height: 34px; filter: drop-shadow(0 0 5px rgba(255,228,92,.9)); }
+    .rover-marker-shell svg { display: block; width: 34px; height: 34px; }
+    .globe-rover-marker { pointer-events: none; transform: translate(-50%, -50%); font-size: 23px; line-height: 1; filter: drop-shadow(0 0 5px rgba(255,228,92,.95)); }
+    .route-source-note { margin-top: 6px; color: #8d97aa; font-size: 10px; line-height: 1.45; }
     #map.picking, #map.picking .leaflet-interactive, #map.picking .leaflet-grab { cursor: crosshair; }
     #globe.picking, #globe.picking canvas { cursor: crosshair !important; }
     @media (max-width: 700px) {
@@ -199,6 +253,92 @@
       padding: 3px 8px; margin: 6px 6px 0 0; cursor: pointer; font: inherit; font-size: 12px;
     }
     .popup-btns button:hover { background: #e0542c; }
+
+    
+    :root {
+      --mc-bg: #070c15; --mc-panel: rgba(12, 20, 34, .94); --mc-panel-2: rgba(18, 29, 47, .92);
+      --mc-border: rgba(111, 145, 183, .28); --mc-text: #edf4ff; --mc-muted: #93a8c1;
+      --mc-orange: #ff9b62; --mc-cyan: #58dbff; --mc-green: #63e6b0; --mc-red: #ff657b;
+    }
+    body { color: var(--mc-text); background: radial-gradient(circle at 75% 0%, #182942 0, #0a1220 36%, #060a12 78%); }
+    header { position: relative; padding: 13px 18px; gap: 14px; background: rgba(5, 10, 18, .88); border-bottom: 1px solid rgba(88, 219, 255, .28); box-shadow: 0 8px 28px rgba(0,0,0,.24); backdrop-filter: blur(14px); }
+    header h1 { color: #f4f8ff; font-size: 19px; letter-spacing: .025em; }
+    header p { color: #9db1c9; font-size: 11px; letter-spacing: .04em; }
+    .header-status { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .status-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border: 1px solid var(--mc-border); border-radius: 999px; background: rgba(24, 39, 60, .75); color: #c5d5e9; font-size: 9px; font-weight: 800; letter-spacing: .07em; white-space: nowrap; }
+    .status-chip-cyan { color: #a7efff; border-color: rgba(88,219,255,.4); }
+    .status-chip.safe { color: #9bf5c6; border-color: rgba(99,230,176,.5); background: rgba(21,112,82,.22); }
+    .status-chip.risk { color: #ffc0ca; border-color: rgba(255,101,123,.65); background: rgba(151,30,52,.28); animation: riskPulse 2s ease-in-out infinite; }
+    .status-chip.pending { color: #ffd3ad; border-color: rgba(255,155,98,.4); }
+    @keyframes riskPulse { 50% { box-shadow: 0 0 0 3px rgba(255,101,123,.08); } }
+    #side-toggle { border-color: rgba(88,219,255,.4); background: rgba(20,38,58,.88); border-radius: 9px; padding: 8px 12px; color: #e8f7ff; }
+    #main { position: relative; }
+    #side { width: 365px; padding: 12px; background: var(--mc-panel); border-right: 1px solid rgba(88,219,255,.18); box-shadow: 12px 0 34px rgba(0,0,0,.2); backdrop-filter: blur(18px); scrollbar-color: #354967 #0c1422; }
+    #map { min-width: 0; }
+    .offline-status { position: relative; overflow: hidden; margin-bottom: 11px; padding: 10px 11px; border-radius: 10px; border-color: rgba(99,230,176,.34); background: linear-gradient(115deg, rgba(13,78,68,.32), rgba(16,28,42,.8)); color: #bdd9d5; }
+    .offline-status::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--mc-green); }
+    .offline-status strong { font-size: 10px; letter-spacing: .025em; }
+    .offline-status small { color: #92aaa9; }
+    .mission-tabs { position: sticky; top: -12px; z-index: 1100; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 -1px 12px; padding: 7px 0 9px; background: linear-gradient(var(--mc-panel) 78%, rgba(12,20,34,0)); backdrop-filter: blur(16px); }
+    .mission-tab { min-width: 0; border: 1px solid rgba(111,145,183,.2) !important; border-radius: 9px !important; padding: 9px 7px !important; background: rgba(23,35,54,.72) !important; color: #9fb2c8 !important; font-size: 10px !important; font-weight: 700 !important; text-align: left; transition: border-color .18s, background .18s, transform .18s; }
+    .mission-tab:hover { border-color: rgba(88,219,255,.45) !important; transform: translateY(-1px); }
+    .mission-tab.active { color: #eafaff !important; border-color: rgba(88,219,255,.68) !important; background: linear-gradient(135deg, rgba(34,107,137,.42), rgba(38,52,81,.86)) !important; box-shadow: inset 0 0 0 1px rgba(88,219,255,.08), 0 5px 15px rgba(0,0,0,.16); }
+    #side details { margin-bottom: 9px; border: 1px solid rgba(111,145,183,.2); border-radius: 10px; background: linear-gradient(150deg, rgba(18,29,47,.92), rgba(11,18,30,.9)); box-shadow: 0 7px 20px rgba(0,0,0,.12); overflow: hidden; }
+    #side details[hidden], [data-route-pane][hidden] { display: none !important; }
+    #side summary { padding: 10px 12px; color: #d5e9ff; font-size: 11px; letter-spacing: .035em; background: rgba(255,255,255,.015); }
+    #side summary::after { color: var(--mc-cyan); }
+    #side details[open] summary { border-bottom: 1px solid rgba(111,145,183,.12); }
+    #side .body { padding: 10px 11px 12px; }
+    #side .sub { color: #91a9c2; letter-spacing: .09em; font-size: 9px; }
+    #side .hint, #side .muted { color: #8da0b8; }
+    #side .chk { padding: 6px 7px; border-radius: 7px; transition: background .15s; }
+    #side .chk:has(input:checked) { background: rgba(88,219,255,.075); }
+    #side .chk:has(input:checked)::after { content: 'ON'; margin-left: auto; color: #84eaff; font-size: 8px; font-weight: 900; letter-spacing: .08em; }
+    #side .chk input { accent-color: var(--mc-cyan); }
+    #side button { border-color: rgba(111,145,183,.28); border-radius: 8px; background: linear-gradient(150deg, rgba(26,43,65,.9), rgba(16,28,45,.95)); color: #dcecff; transition: border-color .15s, background .15s, transform .15s; }
+    #side button:hover { border-color: rgba(88,219,255,.55); background: #203a55; }
+    #side button.on, #side button.active { color: #f4fcff; background: linear-gradient(130deg, #17637b, #24416b); border-color: var(--mc-cyan); }
+    #side input[type=number], #side input[type=text], #side select { border: 1px solid rgba(111,145,183,.3); border-radius: 7px; background: #0a1422; color: #edf6ff; padding: 6px 7px; }
+    #side input:focus, #side select:focus { outline: 1px solid rgba(88,219,255,.7); border-color: var(--mc-cyan); }
+    #side input[type=range] { accent-color: var(--mc-cyan); }
+    #side .coord-box { border-top-color: rgba(111,145,183,.18); }
+    #side .speed-row label { min-width: 83px; color: #adbed2; font-size: 10px; }
+    .route-pane { margin: 0; }
+    .battery-config, .ration-config, .simulation-card { padding: 11px; border: 1px solid rgba(111,145,183,.22); border-radius: 10px; background: linear-gradient(150deg, rgba(20,35,55,.8), rgba(10,18,30,.92)); }
+    .ration-config { margin-top: 9px; }
+    .battery-config .speed-row label, .ration-config .speed-row label { min-width: 85px; }
+    .survival-heading { color: #a8efff; font-size: 10px; letter-spacing: .085em; }
+    .survival-card { border-radius: 10px; border-color: rgba(88,219,255,.25); background: linear-gradient(145deg, rgba(13,29,46,.94), rgba(8,16,27,.96)); }
+    .survival-status { border-radius: 8px; }
+    .survival-metric, .telemetry-metric { padding: 9px; border-radius: 8px; border-color: rgba(111,145,183,.16); background: rgba(255,255,255,.025); }
+    .survival-metric span, .telemetry-metric span { color: #94abc4; }
+    .survival-metric strong { font-size: 13px; }
+    .telemetry-metric strong { color: #f2f8ff; }
+    .battery-track { height: 6px; background: #26364c; }
+    .battery-fill { border-radius: 999px; }
+    .simulation-card { border-color: rgba(255,155,98,.25); }
+    #sim-play { color: #ebfff6; border-color: rgba(99,230,176,.48); background: linear-gradient(130deg, rgba(25,116,90,.8), rgba(18,66,67,.9)); }
+    #sim-pause { color: #ffebb9; }
+    #sim-reset { color: #cdeeff; }
+    #route-info { margin-top: 11px; border-top-color: rgba(111,145,183,.2); }
+    #route-info b { color: #a4edff; }
+    .map-info { border-radius: 10px; border-color: rgba(88,219,255,.35); background: rgba(7,15,27,.86); box-shadow: 0 7px 22px rgba(0,0,0,.28); backdrop-filter: blur(10px); }
+    .leaflet-control-zoom a, .leaflet-bar a { border-color: rgba(88,219,255,.25) !important; background: rgba(7,15,27,.9) !important; color: #e9f7ff !important; }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip { border-color: rgba(88,219,255,.25); background: #0e1b2b; }
+    .leaflet-control-attribution { background: rgba(7,15,27,.76) !important; color: #8da0b8 !important; }
+    .route-source-note, .survival-note { color: #8197b0; }
+    @media (max-width: 850px) {
+      #side { width: min(365px, 89vw); }
+      header { padding: 11px 12px; }
+      header h1 { font-size: 16px; }
+      .mission-tab { font-size: 9px !important; }
+    }
+    @media (max-width: 500px) {
+      #side { max-width: 92%; width: 355px; }
+      .header-status { max-width: 235px; }
+      .status-chip { font-size: 8px; }
+    }
+
   </style>
 </head>
 <body>
@@ -206,12 +346,28 @@
     <div>
       <h1>🔴 Mars Map: Jezero Crater</h1>
       <p>Site: Jezero Crater | Rover: Perseverance</p>
+      <div class="header-status" aria-label="Mission status">
+        <span id="route-state-badge" class="status-chip pending">ROUTE STANDBY</span>
+        <span class="status-chip status-chip-cyan">SURVIVAL TELEMETRY</span>
+      </div>
     </div>
     <button id="side-toggle" type="button">☰ Panel</button>
   </header>
   <div id="main">
     <aside id="side">
-      <details open>
+      <div class="offline-status" role="status" aria-live="polite"
+           title="Route calculations run locally. NASA map tiles and external libraries may still require a network connection unless already cached.">
+        <strong>📡 Local Navigation Cache: ACTIVE (Offline Operations Ready)</strong>
+        Local route calculations are performed in your browser.
+        <small>NASA imagery and CDN libraries may still need network access unless previously cached.</small>
+      </div>
+      <nav class="mission-tabs" role="tablist" aria-label="Mission control sections">
+        <button type="button" class="mission-tab active" role="tab" aria-selected="true" data-mission-tab="map">🗺 Map &amp; Layers</button>
+        <button type="button" class="mission-tab" role="tab" aria-selected="false" data-mission-tab="planner">🧑‍🚀 Mission Planner</button>
+        <button type="button" class="mission-tab" role="tab" aria-selected="false" data-mission-tab="survival">🫁 Survival &amp; Telemetry</button>
+        <button type="button" class="mission-tab" role="tab" aria-selected="false" data-mission-tab="simulation">🚜 Rover Simulation</button>
+      </nav>
+      <details open data-ui-section="map">
         <summary>🗺 View</summary>
         <div class="body">
           <div class="seg">
@@ -221,7 +377,7 @@
         </div>
       </details>
 
-      <details open>
+      <details open data-ui-section="map">
         <summary>🌡 Temperature (thermal)</summary>
         <div class="body">
           <label class="chk"><input type="checkbox" data-layer="thermDay"><span>Daytime temperature</span></label>
@@ -232,7 +388,7 @@
         </div>
       </details>
 
-      <details open>
+      <details open data-ui-section="map">
         <summary>⛰ Terrain</summary>
         <div class="body">
           <label class="chk"><input type="checkbox" data-layer="elevation"><span>Elevation colours (MOLA)</span></label>
@@ -241,7 +397,7 @@
         </div>
       </details>
 
-      <details open>
+      <details open data-ui-section="map">
         <summary>📍 Places</summary>
         <div class="body">
           <label class="chk"><input type="checkbox" data-layer="site"><span>Landing site</span></label>
@@ -256,7 +412,7 @@
         </div>
       </details>
 
-      <details open>
+      <details open data-ui-section="map">
         <summary>🛰 Mission sites &amp; routes</summary>
         <div class="body">
           <div id="sites-box"></div>
@@ -264,7 +420,7 @@
         </div>
       </details>
 
-      <details open>
+      <details open data-ui-section="map">
         <summary>🧪 Séítah minerals (PIA25024)</summary>
         <div class="body">
           <label class="chk"><input type="checkbox" data-sl="minerals"><span>Mineral map (olivine / pyroxene)</span></label>
@@ -281,9 +437,10 @@
         </div>
       </details>
 
-      <details id="route-details">
+      <details id="route-details" data-ui-section="route">
         <summary>🧑‍🚀 Route planner</summary>
         <div class="body">
+          <div class="route-pane" data-route-pane="planner">
           <label class="chk"><input type="checkbox" data-layer="routeGroup"><span>Show route on the map</span></label>
           <div class="btn-row">
             <button id="pick-start-btn" type="button">🟢 Pick start</button>
@@ -313,14 +470,63 @@
           <div class="hint" id="route-hint">The start is Jezero by default. Press “Pick start” to move it, or “Pick destination”, then click any point on the map or the globe, or type coordinates below.</div>
           <div class="speed-row"><label for="speed">Speed</label>
             <input id="speed" type="number" min="0.1" step="0.5" value="10"> <span>km/h</span></div>
-          <div class="speed-row" title="0 = shortest path, higher = detour more to avoid steep ground and climbs">
+          <div class="speed-row" title="0 = shortest path; higher values strongly favour safer, gentler terrain">
             <label for="avoid">Avoid slopes</label>
-            <input id="avoid" type="range" min="0" max="10" step="1" value="4"></div>
+            <input id="avoid" type="range" min="0" max="10" step="1" value="6"></div>
+          <div class="route-source-note">The planner samples NASA elevation and hillshade data on a denser grid. CTX imagery helps visually inspect valleys and passes, but its image pixels are not treated as measured elevation.</div>
+          </div>
+          <div class="route-pane" data-route-pane="survival">
+          <div class="battery-config">
+            <div class="survival-heading">🔋 ROVER BATTERY SYSTEM</div>
+            <div class="speed-row"><label for="battery-capacity">Capacity</label><input id="battery-capacity" type="number" min="0.1" max="1000" step="0.5" value="10"><span>kWh</span></div>
+            <label class="slide" for="battery-level">Current charge <input id="battery-level" type="range" min="0" max="100" step="1" value="85"></label>
+            <div id="battery-level-label" class="battery-level-label">85% · 8.50 kWh available</div>
+            <div class="speed-row"><label for="energy-per-km">Base drain</label><input id="energy-per-km" type="number" min="0" max="100" step="0.05" value="0.25"><span>kWh/km</span></div>
+            <div class="speed-row"><label for="slope-energy-factor">Slope drain</label><input id="slope-energy-factor" type="number" min="0" max="10" step="0.005" value="0.01"><span>kWh/(km·°)</span></div>
+            <div class="muted">Power model is configurable and illustrative, not a published Perseverance engineering specification.</div>
+          </div>
+          <div class="ration-config">
+            <div class="survival-heading">🫁 FOOD, WATER &amp; O₂ STORES</div>
+            <div class="speed-row"><label for="oxygen-capacity">O₂ reserve</label><input id="oxygen-capacity" type="number" min="0" max="100000" step="100" value="2500"><span>L</span></div>
+            <div class="speed-row"><label for="calories-per-day">Food energy</label><input id="calories-per-day" type="number" min="500" max="20000" step="100" value="3000"><span>kcal/day</span></div>
+            <div class="speed-row"><label for="kcal-per-kg">Food density</label><input id="kcal-per-kg" type="number" min="500" max="10000" step="100" value="4500"><span>kcal/kg</span></div>
+            <div class="speed-row"><label for="food-available">Food carried</label><input id="food-available" type="number" min="0" max="1000" step="0.1" value="3"><span>kg</span></div>
+            <div class="speed-row"><label for="water-per-day">Water need</label><input id="water-per-day" type="number" min="0" max="100" step="0.1" value="3.5"><span>L/day</span></div>
+            <div class="speed-row"><label for="water-available">Water carried</label><input id="water-available" type="number" min="0" max="10000" step="0.5" value="10"><span>L</span></div>
+            <div class="speed-row"><label for="food-slope-strain">Food strain</label><input id="food-slope-strain" type="number" min="0" max="10" step="0.5" value="2"><span>%/°</span></div>
+            <div class="speed-row"><label for="water-slope-strain">Water strain</label><input id="water-slope-strain" type="number" min="0" max="10" step="0.5" value="1"><span>%/°</span></div>
+            <div id="ration-summary" class="muted">Estimated supplies will be calculated after a route is planned.</div>
+            <div class="survival-note">Food, water and O₂ capacity values are configurable scenario assumptions, not certified suit or mission-pack specifications.</div>
+          </div>
+          </div>
+          <div class="route-pane" data-route-pane="simulation">
+          <div class="simulation-card">
+            <div class="survival-heading">🚙 ROVER TRAVERSE SIMULATION</div>
+            <div class="btn-row"><button id="sim-play" type="button">▶ Play Simulation</button><button id="sim-pause" type="button" disabled>⏸ Pause</button></div>
+            <div class="btn-row"><button id="sim-reset" type="button">🔄 Reset</button><span id="sim-speed-value" class="sim-speed-value">5×</span></div>
+            <label class="slide" for="sim-speed">Simulation speed <input id="sim-speed" type="range" min="1" max="10" step="1" value="5" list="sim-speed-ticks"></label>
+            <datalist id="sim-speed-ticks"><option value="1" label="1×"></option><option value="5" label="5×"></option><option value="10" label="10×"></option></datalist>
+            <div id="sim-status" class="sim-status" role="status" aria-live="polite">Set a destination and calculate a route to begin.</div>
+            <div class="telemetry-grid">
+              <div class="telemetry-metric"><span>📍 Current Lat / Lng</span><strong id="sim-coords">—</strong></div>
+              <div class="telemetry-metric"><span>⛰ Elevation</span><strong id="sim-elevation">—</strong></div>
+              <div class="telemetry-metric"><span>📐 Current slope</span><strong id="sim-slope">—</strong></div>
+              <div class="telemetry-metric"><span>🔋 Remaining battery</span><strong id="sim-battery">—</strong></div>
+              <div class="telemetry-metric"><span>🫁 Remaining O₂</span><strong id="sim-o2">—</strong></div>
+              <div class="telemetry-metric"><span>🥫 Food stores remaining</span><strong id="sim-food">—</strong></div>
+              <div class="telemetry-metric"><span>💧 Water remaining</span><strong id="sim-water">—</strong></div>
+              <div class="telemetry-metric"><span>🧭 Travelled / remaining</span><strong id="sim-distance">—</strong></div>
+            </div>
+            <div id="sim-hazard-alert" class="sim-hazard unknown">⚪ Live terrain telemetry will appear when simulation starts.</div>
+          </div>
+          </div>
+          <div class="route-pane" data-route-pane="survival">
           <div id="route-info"></div>
+          </div>
         </div>
       </details>
 
-      <details open>
+      <details open data-ui-section="map">
         <summary>🎨 Legends</summary>
         <div class="body"><div id="legend-box"></div></div>
       </details>
@@ -762,6 +968,19 @@
     let route = null;       
     let pickMode = null;      
     let start = { lat: SITE.lat, lng: SITE.lng, custom: false };  
+    const roverGroup = L.layerGroup();
+    let roverMarker = null;
+    let roverPosition = null;
+    let simulationRunning = false;
+    let simulationStarted = false;
+    let simulationFrameId = 0;
+    let simulationLastTimestamp = 0;
+    let simulationDistanceM = 0;
+    let simulationInitialChargeKWh = 0;
+    let simulationLastGlobeSync = 0;
+    let simulationProfile = null;
+
+    const ROVER_MARKER_HTML = '<div class="rover-marker-shell"><svg viewBox="0 0 40 40" aria-label="Rover" role="img"><circle cx="11" cy="30" r="5" fill="#14192b" stroke="#ffe45c" stroke-width="2"/><circle cx="29" cy="30" r="5" fill="#14192b" stroke="#ffe45c" stroke-width="2"/><rect x="7" y="13" width="26" height="16" rx="3" fill="#ffcf55" stroke="#fff2a5" stroke-width="1.5"/><rect x="12" y="16" width="16" height="7" rx="1" fill="#35516b"/><path d="M20 13 L20 6 L27 6" fill="none" stroke="#d9e7f4" stroke-width="2"/><circle cx="28" cy="6" r="2" fill="#ff5b4a"/></svg></div>';
 
     function setGlobeMessage(text) {
       const msg = document.getElementById('globe-msg');
@@ -1210,6 +1429,9 @@
       if (dest && map.hasLayer(routeGroup)) {
         points.push({ lat: dest.lat, lng: dest.lng, color: ROUTE_COLOR });
       }
+      if (roverPosition && route && map.hasLayer(routeGroup)) {
+        points.push({ lat: roverPosition.lat, lng: roverPosition.lng, color: '#ffe45c' });
+      }
       globe.pointsData(points);
       globe.ringsData(visible ? [SITE] : []);
     }
@@ -1282,6 +1504,23 @@
             .onGlobeClick(function (coords) {
               if (pickMode && coords) setPoint(coords.lat, coords.lng);
             });
+          try {
+            if (typeof globe.htmlElementsData === 'function' && typeof globe.htmlElement === 'function') {
+              globe.htmlElementsData([])
+                .htmlElement(function () {
+                  const el = document.createElement('div');
+                  el.className = 'globe-rover-marker';
+                  el.textContent = '🚙';
+                  el.title = 'Simulated Mars rover';
+                  return el;
+                })
+                .htmlLat('lat')
+                .htmlLng('lng')
+                .htmlAltitude('altitude');
+            }
+          } catch (err) {
+            console.warn('3D HTML rover icon is unavailable in this Globe.gl build:', err);
+          }
           globe.pointOfView({ lat: SITE.lat, lng: SITE.lng, altitude: 2.2 });
 
           globe.controls().addEventListener('change', function () {
@@ -1711,9 +1950,9 @@
     
     
     
-    const GRID_MAX_SIDE = 240;
-    const GRID_MIN_CELL_M = 160;
-    const MAX_REGION_TILES = 100;
+    const GRID_MAX_SIDE = 480;
+    const GRID_MIN_CELL_M = 75;
+    const MAX_REGION_TILES = 120;
     const MIN_ELEV_ZOOM = 2;
 
     
@@ -1941,8 +2180,8 @@
       if (valid < 0.05 * rows * cols) return null;
       const mean = sum / valid;
       for (let q = 0; q < elev.length; q++) if (isNaN(elev[q])) elev[q] = mean;
-      let smooth = blurGrid(elev, rows, cols);
-      smooth = blurGrid(smooth, rows, cols);
+      
+      const smooth = blurGrid(elev, rows, cols);
       return { box: box, rows: rows, cols: cols, dLat: dLat, dLng: dLng, elev: smooth, shade: null };
     }
 
@@ -1959,6 +2198,31 @@
       return grid.elev[ij[0] * grid.cols + ij[1]];
     }
 
+    function estimateLocalSlopeDeg(grid, lat, lng) {
+      if (!grid) return NaN;
+      const ij = gridNode(grid, lat, lng);
+      const i = ij[0], j = ij[1];
+      const idx = i * grid.cols + j;
+      let maxGradient = grid.shade ? Math.max(0, grid.shade[idx] || 0) : 0;
+      const here = [grid.box.north - i * grid.dLat, grid.box.west + j * grid.dLng];
+      const hereElev = grid.elev[idx];
+      for (let di = -1; di <= 1; di++) {
+        for (let dj = -1; dj <= 1; dj++) {
+          if (!di && !dj) continue;
+          const ni = i + di, nj = j + dj;
+          if (ni < 0 || nj < 0 || ni >= grid.rows || nj >= grid.cols) continue;
+          const nIdx = ni * grid.cols + nj;
+          const otherElev = grid.elev[nIdx];
+          if (!Number.isFinite(hereElev) || !Number.isFinite(otherElev)) continue;
+          const other = [grid.box.north - ni * grid.dLat, grid.box.west + nj * grid.dLng];
+          const d = hav(here, other);
+          if (d > 0) maxGradient = Math.max(maxGradient, Math.abs(otherElev - hereElev) / d);
+        }
+      }
+      return Math.atan(Math.min(maxGradient, 3)) / DEG;
+    }
+
+    
     
     function solveRoute(grid, a, b, k) {
       const R = grid.rows;
@@ -2045,12 +2309,19 @@
             const d = Math.sqrt(dx * dx + dy * dy);
             if (d === 0) continue;
             const dh = grid.elev[nIdx] - grid.elev[cur];
-            const es = Math.abs(dh) / d;                       
-            const sh = grid.shade ? Math.max(grid.shade[cur], grid.shade[nIdx]) : 0;   
-            const slope = grid.shade ? Math.max(sh, 0.5 * es) : es;
-            const sl = Math.min(slope, 1.2);
+            const es = Math.abs(dh) / d;
+            const sh = grid.shade ? Math.max(grid.shade[cur] || 0, grid.shade[nIdx] || 0) : 0;
+            const slope = grid.shade ? Math.max(sh, es) : es;
+            const sl = Math.min(slope, 2.0);
+            const slopeDeg = Math.atan(sl) / DEG;
+            const moderateSlopePenalty = 0.45 * sl * sl;
+            const overThreshold = Math.max(0, slopeDeg - 10);
             
-            const cost = d * (1 + k * 6 * sl * sl + k * 40 * Math.max(0, sl - 0.3)) + k * 0.25 * Math.max(dh, 0);
+            
+            const exponentialSteepPenalty = Math.expm1(Math.min(7, overThreshold / 2.5));
+            const slopePenalty = k * (moderateSlopePenalty + 4.0 * exponentialSteepPenalty);
+            const climbPenalty = k * 0.35 * Math.max(dh, 0);
+            const cost = d * (1 + slopePenalty) + climbPenalty;
             const t = gScore[cur] + cost;
             if (t < gScore[nIdx]) {
               gScore[nIdx] = t;
@@ -2155,7 +2426,7 @@
           const raw = sol.pts.slice();
           raw[0] = [start.lat, start.lng];
           raw[raw.length - 1] = [dest.lat, dest.lng];
-          const pts = chaikin(raw, 2);
+          const pts = raw;
           const st = profileStats(sol.elev);
           const direct = profileStats(straight.pts.map(function (p) { return gridElevAt(grid, p[0], p[1]); }));
           route = {
@@ -2163,6 +2434,7 @@
             distance: pathLength(pts),
             bearing: bearingBetween(pts[0], pts[1]),
             terrain: true,
+            grid: grid,
             gain: st.gain, loss: st.loss, min: st.min, max: st.max,
             maxSlope: maxSlopeAlong(grid, sol.pts),
             straightSlope: maxSlopeAlong(grid, straight.pts),
@@ -2179,6 +2451,7 @@
     }
 
     function planRoute() {
+      stopSimulation(true);
       const job = ++planJob;
       const straight = geodesic(start, dest);
       const key = planKey();
@@ -2225,28 +2498,331 @@
       );
     }
 
+    const SURVIVAL_MODEL = Object.freeze({
+      oxygenLitersPerMinute: 0.8,
+      slopePenaltyPerDegree: 0.015,
+      defaultBatteryCapacityKWh: 10,
+      defaultCurrentChargePercent: 85,
+      defaultBaseEnergyKWhPerKm: 0.25,
+      defaultSlopeEnergyKWhPerKmDegree: 0.01,
+      defaultOxygenCapacityL: 2500,
+      defaultCaloriesPerDay: 3000,
+      defaultKcalPerKg: 4500,
+      defaultFoodAvailableKg: 3,
+      defaultWaterPerDayL: 3.5,
+      defaultWaterAvailableL: 10,
+      defaultFoodSlopeStrainPctPerDegree: 2,
+      defaultWaterSlopeStrainPctPerDegree: 1
+    });
+
+    function batterySettings() {
+      const capInput = document.getElementById('battery-capacity');
+      const levelInput = document.getElementById('battery-level');
+      const baseInput = document.getElementById('energy-per-km');
+      const slopeInput = document.getElementById('slope-energy-factor');
+      const capacityKWh = Math.max(0.1, Math.min(1000, parseFloat(capInput && capInput.value) || SURVIVAL_MODEL.defaultBatteryCapacityKWh));
+      const chargePercent = Math.max(0, Math.min(100, parseFloat(levelInput && levelInput.value) || 0));
+      const baseParsed = parseFloat(baseInput && baseInput.value);
+      const baseEnergyKWhPerKm = Math.max(0, Number.isFinite(baseParsed) ? baseParsed : SURVIVAL_MODEL.defaultBaseEnergyKWhPerKm);
+      const slopeParsed = parseFloat(slopeInput && slopeInput.value);
+      const slopeEnergyKWhPerKmDegree = Math.max(0, Number.isFinite(slopeParsed) ? slopeParsed : SURVIVAL_MODEL.defaultSlopeEnergyKWhPerKmDegree);
+      return {
+        capacityKWh: capacityKWh,
+        chargePercent: chargePercent,
+        availableChargeKWh: capacityKWh * chargePercent / 100,
+        baseEnergyKWhPerKm: baseEnergyKWhPerKm,
+        slopeEnergyKWhPerKmDegree: slopeEnergyKWhPerKmDegree
+      };
+    }
+
+    function rationSettings() {
+      const read = function (id, fallback, min, max) {
+        const el = document.getElementById(id);
+        const parsed = parseFloat(el && el.value);
+        const value = Number.isFinite(parsed) ? parsed : fallback;
+        return Math.max(min, Math.min(max, value));
+      };
+      return {
+        oxygenCapacityL: read('oxygen-capacity', SURVIVAL_MODEL.defaultOxygenCapacityL, 0, 100000),
+        caloriesPerDay: read('calories-per-day', SURVIVAL_MODEL.defaultCaloriesPerDay, 0, 20000),
+        kcalPerKg: read('kcal-per-kg', SURVIVAL_MODEL.defaultKcalPerKg, 1, 10000),
+        foodAvailableKg: read('food-available', SURVIVAL_MODEL.defaultFoodAvailableKg, 0, 1000),
+        waterPerDayL: read('water-per-day', SURVIVAL_MODEL.defaultWaterPerDayL, 0, 100),
+        waterAvailableL: read('water-available', SURVIVAL_MODEL.defaultWaterAvailableL, 0, 10000),
+        foodSlopeStrainPctPerDegree: read('food-slope-strain', SURVIVAL_MODEL.defaultFoodSlopeStrainPctPerDegree, 0, 10),
+        waterSlopeStrainPctPerDegree: read('water-slope-strain', SURVIVAL_MODEL.defaultWaterSlopeStrainPctPerDegree, 0, 10)
+      };
+    }
+
+    function updateBatteryConfigLabel() {
+      const settings = batterySettings();
+      const label = document.getElementById('battery-level-label');
+      if (label) label.textContent = settings.chargePercent.toFixed(0) + '% · ' + settings.availableChargeKWh.toFixed(2) + ' kWh available';
+      const ration = rationSettings();
+      const summary = document.getElementById('ration-summary');
+      if (summary) summary.textContent = 'Stores configured: ' + ration.oxygenCapacityL.toLocaleString('en-US') + ' L O₂ · ' + ration.foodAvailableKg.toFixed(1) + ' kg food · ' + ration.waterAvailableL.toFixed(1) + ' L water.';
+    }
+
+    function createBatteryProfile(route, speedKmh) {
+      const settings = batterySettings();
+      const rations = rationSettings();
+      const grid = route && route.grid;
+      const pts = route && route.pts ? route.pts : [];
+      const segments = [];
+      let totalDistanceM = 0;
+      let totalEnergyKWh = 0;
+      let totalOxygenL = 0;
+      let totalCaloriesKcal = 0;
+      let totalFoodMassKg = 0;
+      let totalWaterL = 0;
+      const speed = Math.max(0.1, speedKmh || 10);
+      for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1];
+        const b = pts[i];
+        const distanceM = hav(a, b);
+        if (!Number.isFinite(distanceM) || distanceM <= 0) continue;
+        const distanceKm = distanceM / 1000;
+        const elevA = grid ? gridElevAt(grid, a[0], a[1]) : NaN;
+        const elevB = grid ? gridElevAt(grid, b[0], b[1]) : NaN;
+        const climbM = Number.isFinite(elevA) && Number.isFinite(elevB) ? Math.max(0, elevB - elevA) : 0;
+        const uphillSlopeDeg = climbM > 0 ? Math.atan(climbM / distanceM) / DEG : 0;
+        const midLat = (a[0] + b[0]) / 2;
+        const midLng = (a[1] + b[1]) / 2;
+        let localSlopeDeg = grid ? estimateLocalSlopeDeg(grid, midLat, midLng) : NaN;
+        if (!Number.isFinite(localSlopeDeg)) {
+          localSlopeDeg = Number.isFinite(route.maxSlope) ? Math.max(0, route.maxSlope) : uphillSlopeDeg;
+        }
+        const effortSlopeDeg = Math.max(0, Math.min(45, localSlopeDeg));
+        const durationHours = distanceKm / speed;
+        const energyKWh = distanceKm * settings.baseEnergyKWhPerKm +
+          distanceKm * settings.slopeEnergyKWhPerKmDegree * uphillSlopeDeg;
+        const oxygenL = durationHours * 60 * SURVIVAL_MODEL.oxygenLitersPerMinute *
+          (1 + effortSlopeDeg * SURVIVAL_MODEL.slopePenaltyPerDegree);
+        const foodEffortFactor = 1 + effortSlopeDeg * rations.foodSlopeStrainPctPerDegree / 100;
+        const waterEffortFactor = 1 + effortSlopeDeg * rations.waterSlopeStrainPctPerDegree / 100;
+        const caloriesKcal = durationHours / 24 * rations.caloriesPerDay * foodEffortFactor;
+        const foodMassKg = caloriesKcal / Math.max(1, rations.kcalPerKg);
+        const waterL = durationHours / 24 * rations.waterPerDayL * waterEffortFactor;
+        const segment = {
+          a: a, b: b, distanceM: distanceM,
+          startDistanceM: totalDistanceM,
+          endDistanceM: totalDistanceM + distanceM,
+          startEnergyKWh: totalEnergyKWh,
+          endEnergyKWh: totalEnergyKWh + energyKWh,
+          startOxygenL: totalOxygenL,
+          endOxygenL: totalOxygenL + oxygenL,
+          startCaloriesKcal: totalCaloriesKcal,
+          endCaloriesKcal: totalCaloriesKcal + caloriesKcal,
+          startFoodMassKg: totalFoodMassKg,
+          endFoodMassKg: totalFoodMassKg + foodMassKg,
+          startWaterL: totalWaterL,
+          endWaterL: totalWaterL + waterL,
+          energyKWh: energyKWh,
+          oxygenL: oxygenL,
+          caloriesKcal: caloriesKcal,
+          foodMassKg: foodMassKg,
+          waterL: waterL,
+          elevA: elevA,
+          elevB: elevB,
+          localSlopeDeg: localSlopeDeg,
+          uphillSlopeDeg: uphillSlopeDeg
+        };
+        segments.push(segment);
+        totalDistanceM += distanceM;
+        totalEnergyKWh += energyKWh;
+        totalOxygenL += oxygenL;
+        totalCaloriesKcal += caloriesKcal;
+        totalFoodMassKg += foodMassKg;
+        totalWaterL += waterL;
+      }
+      return {
+        segments: segments,
+        totalDistanceM: totalDistanceM,
+        totalEnergyKWh: totalEnergyKWh,
+        totalOxygenL: totalOxygenL,
+        totalCaloriesKcal: totalCaloriesKcal,
+        totalFoodMassKg: totalFoodMassKg,
+        totalWaterL: totalWaterL,
+        settings: settings,
+        rations: rations
+      };
+    }
+
+    function segmentAtDistance(profile, distanceM) {
+      if (!profile || !profile.segments.length) return null;
+      const d = Math.max(0, Math.min(profile.totalDistanceM, distanceM));
+      let lo = 0, hi = profile.segments.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (d <= profile.segments[mid].endDistanceM) hi = mid;
+        else lo = mid + 1;
+      }
+      const seg = profile.segments[lo];
+      const t = Math.max(0, Math.min(1, (d - seg.startDistanceM) / Math.max(seg.distanceM, 1e-9)));
+      return {
+        segment: seg,
+        t: t,
+        lat: seg.a[0] + (seg.b[0] - seg.a[0]) * t,
+        lng: seg.a[1] + (seg.b[1] - seg.a[1]) * t,
+        elevationM: Number.isFinite(seg.elevA) && Number.isFinite(seg.elevB)
+          ? seg.elevA + (seg.elevB - seg.elevA) * t
+          : NaN,
+        energyUsedKWh: seg.startEnergyKWh + seg.energyKWh * t,
+        oxygenWeightL: seg.startOxygenL + seg.oxygenL * t,
+        caloriesUsedKcal: seg.startCaloriesKcal + seg.caloriesKcal * t,
+        foodMassUsedKg: seg.startFoodMassKg + seg.foodMassKg * t,
+        waterUsedL: seg.startWaterL + seg.waterL * t,
+        slopeDeg: seg.localSlopeDeg,
+        uphillSlopeDeg: seg.uphillSlopeDeg
+      };
+    }
+
+    function calculateSurvivalMetrics(route, hours) {
+      const distanceM = Math.max(0, Number(route.distance) || 0);
+      const ascentM = Number.isFinite(route.gain) ? Math.max(0, route.gain) : 0;
+      const hasMaxSlope = Number.isFinite(route.maxSlope);
+      const averageAscentSlope = distanceM > 0 ? Math.atan(ascentM / distanceM) / DEG : 0;
+      const slopeDeg = hasMaxSlope ? Math.max(0, route.maxSlope) : averageAscentSlope;
+      const slopeSource = hasMaxSlope
+        ? 'maximum route slope estimate'
+        : (Number.isFinite(route.gain) ? 'average ascent proxy' : 'flat-ground baseline; slope unavailable');
+      const slopeFactor = 1 + slopeDeg * SURVIVAL_MODEL.slopePenaltyPerDegree;
+      const durationMinutes = Math.max(0, hours * 60);
+      const speedKmh = hours > 0 ? distanceM / 1000 / hours : 10;
+      const batteryProfile = createBatteryProfile(route, speedKmh);
+      route.batteryProfile = batteryProfile;
+      const settings = batteryProfile.settings;
+      const rations = batteryProfile.rations;
+      const energyKWh = batteryProfile.totalEnergyKWh;
+      const oxygenLiters = batteryProfile.totalOxygenL || durationMinutes * SURVIVAL_MODEL.oxygenLitersPerMinute * slopeFactor;
+      const caloriesKcal = batteryProfile.totalCaloriesKcal;
+      const foodMassKg = batteryProfile.totalFoodMassKg;
+      const waterLiters = batteryProfile.totalWaterL;
+      const batteryMarginKWh = settings.availableChargeKWh - energyKWh;
+      const availableFoodCaloriesKcal = rations.foodAvailableKg * rations.kcalPerKg;
+      const batteryInsufficient = energyKWh > settings.availableChargeKWh;
+      const oxygenInsufficient = oxygenLiters > rations.oxygenCapacityL;
+      const foodInsufficient = caloriesKcal > availableFoodCaloriesKcal || foodMassKg > rations.foodAvailableKg;
+      const waterInsufficient = waterLiters > rations.waterAvailableL;
+      return {
+        hours: hours,
+        durationMinutes: durationMinutes,
+        oxygenLiters: oxygenLiters,
+        slopeDeg: slopeDeg,
+        slopeSource: slopeSource,
+        slopeFactor: slopeFactor,
+        ascentM: ascentM,
+        energyKWh: energyKWh,
+        batteryCapacityKWh: settings.capacityKWh,
+        availableChargeKWh: settings.availableChargeKWh,
+        currentChargePercent: settings.chargePercent,
+        batteryMarginKWh: batteryMarginKWh,
+        batteryPercentOfCapacity: settings.capacityKWh > 0 ? energyKWh / settings.capacityKWh * 100 : 0,
+        baseEnergyKWhPerKm: settings.baseEnergyKWhPerKm,
+        slopeEnergyKWhPerKmDegree: settings.slopeEnergyKWhPerKmDegree,
+        batteryInsufficient: batteryInsufficient,
+        oxygenCapacityL: rations.oxygenCapacityL,
+        oxygenInsufficient: oxygenInsufficient,
+        caloriesKcal: caloriesKcal,
+        foodMassKg: foodMassKg,
+        kcalPerKg: rations.kcalPerKg,
+        caloriesPerDay: rations.caloriesPerDay,
+        availableFoodKg: rations.foodAvailableKg,
+        availableFoodCaloriesKcal: availableFoodCaloriesKcal,
+        foodInsufficient: foodInsufficient,
+        waterLiters: waterLiters,
+        waterPerDayL: rations.waterPerDayL,
+        availableWaterL: rations.waterAvailableL,
+        waterInsufficient: waterInsufficient,
+        resourceInsufficient: batteryInsufficient || oxygenInsufficient || foodInsufficient || waterInsufficient,
+        hasMaxSlope: hasMaxSlope,
+        batteryProfile: batteryProfile
+      };
+    }
+
+    function survivalPanelHtml(metrics, route) {
+      let alertHtml;
+      if (Number.isFinite(route.maxSlope) && route.maxSlope > 15) {
+        alertHtml = '<div class="survival-status hazard">⚠️ HAZARD WARNING: Steep slope detected (&gt;15°). High risk of rover rollover and severe EVA suit physical strain.</div>';
+      } else if (Number.isFinite(route.maxSlope) && route.maxSlope <= 15) {
+        alertHtml = '<div class="survival-status safe">✅ ROUTE SAFE: Estimated terrain inclination is within the nominal 15° limit.</div>';
+      } else {
+        alertHtml = '<div class="survival-status unknown">⚪ SLOPE STATUS UNKNOWN: Fine slope data is unavailable. Do not treat this route as verified safe.</div>';
+      }
+      const batteryWidth = Math.max(0, Math.min(100, metrics.currentChargePercent));
+      const batteryColor = metrics.batteryInsufficient ? '#ff737a' : (metrics.currentChargePercent < 25 ? '#ffbf69' : '#4dd2a0');
+      const resourceIssues = [];
+      if (metrics.batteryInsufficient) resourceIssues.push('battery');
+      if (metrics.oxygenInsufficient) resourceIssues.push('O₂');
+      if (metrics.foodInsufficient) resourceIssues.push('food');
+      if (metrics.waterInsufficient) resourceIssues.push('water');
+      const capacityAlert = metrics.resourceInsufficient
+        ? '<div class="survival-status hazard">🚨 RESOURCE CAPACITY WARNING: Planned route exceeds available ' + resourceIssues.join(', ') + ' reserves. Reduce the route, increase stores, or choose a lower-energy plan.</div>'
+        : '<div class="survival-status safe">✅ RESOURCE CHECK: Estimated route demand is within configured battery, O₂, food and water stores.</div>';
+      const chargeClass = metrics.batteryInsufficient ? ' over-capacity' : '';
+      const oxygenClass = metrics.oxygenInsufficient ? ' over-capacity' : '';
+      const foodClass = metrics.foodInsufficient ? ' over-capacity' : '';
+      const waterClass = metrics.waterInsufficient ? ' over-capacity' : '';
+      const oxygenLabel = metrics.oxygenLiters >= 100 ? Math.round(metrics.oxygenLiters).toLocaleString('en-US') + ' L' : metrics.oxygenLiters.toFixed(1) + ' L';
+      const foodLabel = metrics.caloriesKcal.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' kcal';
+      return '<div class="survival-card">' +
+        '<div class="survival-heading">🧭 SURVIVAL &amp; TERRAIN SAFETY</div>' +
+        alertHtml + capacityAlert +
+        '<div class="survival-grid">' +
+          '<div class="survival-metric"><span>🫁 O₂ required / reserve</span><strong class="' + oxygenClass.trim() + '">' + oxygenLabel + ' / ' + metrics.oxygenCapacityL.toLocaleString('en-US') + ' L</strong></div>' +
+          '<div class="survival-metric"><span>🔋 Energy required</span><strong class="' + chargeClass.trim() + '">' + metrics.energyKWh.toFixed(3) + ' kWh</strong></div>' +
+          '<div class="survival-metric"><span>⚡ Available battery</span><strong>' + metrics.availableChargeKWh.toFixed(2) + ' / ' + metrics.batteryCapacityKWh.toFixed(2) + ' kWh</strong>' +
+            '<div class="battery-track" aria-label="Current battery charge"><div class="battery-fill" style="width:' + batteryWidth + '%;background:' + batteryColor + '"></div></div></div>' +
+          '<div class="survival-metric"><span>🔌 Charge after route</span><strong class="' + (metrics.batteryMarginKWh < 0 ? 'over-capacity' : '') + '">' + metrics.batteryMarginKWh.toFixed(2) + ' kWh</strong></div>' +
+          '<div class="survival-metric"><span>🥫 Food energy needed</span><strong class="' + foodClass.trim() + '">' + foodLabel + '</strong></div>' +
+          '<div class="survival-metric"><span>🍱 Freeze-dried food mass</span><strong class="' + foodClass.trim() + '">' + metrics.foodMassKg.toFixed(3) + ' kg / ' + metrics.availableFoodKg.toFixed(2) + ' kg</strong></div>' +
+          '<div class="survival-metric"><span>💧 Water needed</span><strong class="' + waterClass.trim() + '">' + metrics.waterLiters.toFixed(2) + ' L / ' + metrics.availableWaterL.toFixed(2) + ' L</strong></div>' +
+          '<div class="survival-metric"><span>🧗 Estimated ascent</span><strong>+' + Math.round(metrics.ascentM).toLocaleString('en-US') + ' m</strong></div>' +
+          '<div class="survival-metric"><span>📈 Energy vs. pack</span><strong>' + metrics.batteryPercentOfCapacity.toFixed(1) + '% of pack</strong></div>' +
+        '</div>' +
+        '<div class="survival-note">O₂: 0.8 L/min base, adjusted +1.5% per degree of estimated local slope. Food: ' + metrics.caloriesPerDay.toLocaleString('en-US') + ' kcal/day × exertion factor; freeze-dried density ' + metrics.kcalPerKg.toLocaleString('en-US') + ' kcal/kg. Water: ' + metrics.waterPerDayL.toFixed(1) + ' L/day with slope-strain adjustment.</div>' +
+        '<div class="survival-note">Battery, food, water and oxygen stores are illustrative, configurable scenario assumptions — not validated NASA rover power or EVA life-support specifications. MOLA / hillshade terrain estimates are approximate; CTX imagery is not used as measured elevation.</div>' +
+      '</div>';
+    }
+
     function updateRouteInfo() {
       const box = document.getElementById('route-info');
-      if (!dest) { box.style.display = 'none'; box.innerHTML = ''; return; }
+      const routeBadge = document.getElementById('route-state-badge');
+      if (!dest) {
+        box.style.display = 'none'; box.innerHTML = '';
+        if (routeBadge) { routeBadge.className = 'status-chip pending'; routeBadge.textContent = 'ROUTE STANDBY'; }
+        updateBatteryConfigLabel();
+        return;
+      }
+      if (routeBadge) { routeBadge.className = 'status-chip pending'; routeBadge.textContent = route ? 'ROUTE CALCULATED' : 'PLANNING ROUTE…'; }
       let html =
         '<div>From: <b>' + (start.custom ? fmtCoord(start.lat, start.lng) : 'Jezero (landing site)') + '</b></div>' +
         '<div>To: <b>' + fmtCoord(dest.lat, dest.lng) + '</b></div>';
       if (route) {
         const speed = Math.max(parseFloat(document.getElementById('speed').value) || 10, 0.1);
         const hours = route.distance / 1000 / speed;
+        route.survival = calculateSurvivalMetrics(route, hours);
+        if (routeBadge) {
+          const risk = (Number.isFinite(route.maxSlope) && route.maxSlope > 15) || route.survival.resourceInsufficient;
+          routeBadge.className = 'status-chip ' + (risk ? 'risk' : (Number.isFinite(route.maxSlope) ? 'safe' : 'pending'));
+          routeBadge.textContent = risk ? 'MISSION RISK' : (Number.isFinite(route.maxSlope) ? 'ROUTE NOMINAL' : 'ROUTE UNVERIFIED');
+        }
         html += '<div>Distance: <b>' + formatDistance(route.distance) + '</b>' +
           (route.terrain ? ' <span class="muted">(terrain-aware)</span>' : '') + '</div>';
         if (route.terrain) {
           html += '<div>Ascent / descent: <b>+' + round10(route.gain) + ' / −' + round10(route.loss) + ' m</b></div>' +
             '<div>Highest / lowest: <b>' + round10(route.max) + ' / ' + round10(route.min) + ' m</b></div>' +
-            (isNaN(route.maxSlope) ? '' :
-              '<div>Steepest slope (est.): <b>' + route.maxSlope.toFixed(0) + '°</b> ' +
-              '<span class="muted">(direct line: ' + route.straightSlope.toFixed(0) + '°)</span></div>') +
+            (Number.isFinite(route.maxSlope) ?
+              '<div>Steepest slope (est.): <b>' + route.maxSlope.toFixed(1) + '°</b> ' +
+              (Number.isFinite(route.straightSlope)
+                ? '<span class="muted">(direct line: ' + route.straightSlope.toFixed(1) + '°)</span>'
+                : '') + '</div>' : '') +
             '<div class="muted">Direct line: ' + formatDistance(route.straight.distance) +
             ', ascent +' + round10(route.straight.gain) + ' m (grey dotted)</div>';
         }
         html += '<div>Initial heading: <b>' + route.bearing.toFixed(0) + '° ' + compass(route.bearing) + '</b></div>' +
-          '<div>Travel time: <b>' + formatDuration(hours) + '</b></div>';
+          '<div>Travel time: <b>' + formatDuration(hours) + '</b></div>' +
+          survivalPanelHtml(route.survival, route);
         if (route.terrain) {
           html += '<div class="muted">Elevations are decoded from the MOLA colours, so they are approximate.</div>';
         }
@@ -2254,10 +2830,236 @@
       if (routeStatus) html += '<div class="muted">' + routeStatus + '</div>';
       box.style.display = 'block';
       box.innerHTML = html;
+      updateBatteryConfigLabel();
+      updateSimulationHud();
+    }
+
+    function setSimulationStatus(text) {
+      const el = document.getElementById('sim-status');
+      if (el) el.textContent = text;
+    }
+
+    function setSimulationButtons() {
+      const play = document.getElementById('sim-play');
+      const pause = document.getElementById('sim-pause');
+      if (play) play.disabled = !route || !route.pts || route.pts.length < 2 || simulationRunning;
+      if (pause) pause.disabled = !simulationRunning;
+    }
+
+    function syncGlobeRover() {
+      if (!globe || typeof globe.htmlElementsData !== 'function') return;
+      const visible = !!(roverPosition && route && map.hasLayer(routeGroup));
+      try {
+        globe.htmlElementsData(visible ? [{ lat: roverPosition.lat, lng: roverPosition.lng, altitude: 0.014 }] : []);
+      } catch (err) {
+        console.warn('Could not update the 3D rover overlay:', err);
+      }
+    }
+
+    function syncRoverMarker(updateGlobe) {
+      const visible = !!(roverPosition && route && map.hasLayer(routeGroup));
+      if (!visible) {
+        if (map.hasLayer(roverGroup)) map.removeLayer(roverGroup);
+        if (updateGlobe !== false) {
+          syncGlobeRover();
+          if (globe) syncGlobeSite();
+        }
+        return;
+      }
+      if (!roverMarker) {
+        roverMarker = L.marker([roverPosition.lat, roverPosition.lng], {
+          icon: L.divIcon({ className: 'rover-leaflet-icon', html: ROVER_MARKER_HTML, iconSize: [34, 34], iconAnchor: [17, 17] }),
+          interactive: false, keyboard: false, zIndexOffset: 1500
+        });
+        roverMarker.addTo(roverGroup);
+      } else {
+        roverMarker.setLatLng([roverPosition.lat, roverPosition.lng]);
+      }
+      if (!map.hasLayer(roverGroup)) roverGroup.addTo(map);
+      if (updateGlobe !== false) {
+        syncGlobeRover();
+        if (globe) syncGlobeSite();
+      }
+    }
+
+    function stopSimulation(clearMarker, statusText) {
+      simulationRunning = false;
+      if (simulationFrameId) cancelAnimationFrame(simulationFrameId);
+      simulationFrameId = 0;
+      simulationLastTimestamp = 0;
+      simulationProfile = null;
+      if (clearMarker) {
+        simulationStarted = false;
+        simulationDistanceM = 0;
+        roverPosition = null;
+        if (roverMarker) {
+          roverGroup.clearLayers();
+          roverMarker = null;
+        }
+        if (map.hasLayer(roverGroup)) map.removeLayer(roverGroup);
+      }
+      if (statusText) setSimulationStatus(statusText);
+      setSimulationButtons();
+      syncGlobeRover();
+      if (globe) syncGlobeSite();
+      updateSimulationHud();
+    }
+
+    function updateSimulationHud() {
+      const ids = ['sim-coords', 'sim-elevation', 'sim-slope', 'sim-battery', 'sim-o2', 'sim-food', 'sim-water', 'sim-distance'];
+      if (!route || !route.pts || route.pts.length < 2 || !simulationStarted || !route.survival) {
+        ids.forEach(function (id) { const el = document.getElementById(id); if (el) el.textContent = '—'; });
+        const alert = document.getElementById('sim-hazard-alert');
+        if (alert) { alert.className = 'sim-hazard unknown'; alert.textContent = '⚪ Live terrain and resource telemetry will appear when simulation starts.'; }
+        setSimulationButtons();
+        return;
+      }
+      const profile = simulationProfile || route.batteryProfile || createBatteryProfile(route, Math.max(parseFloat(document.getElementById('speed').value) || 10, 0.1));
+      const sample = segmentAtDistance(profile, simulationDistanceM);
+      const pos = roverPosition || { lat: route.pts[0][0], lng: route.pts[0][1] };
+      const totalM = profile.totalDistanceM || route.distance || 0;
+      const traveledM = Math.max(0, Math.min(totalM, simulationDistanceM));
+      const remainingM = Math.max(0, totalM - traveledM);
+      const battery = profile.settings || batterySettings();
+      const stores = profile.rations || rationSettings();
+      const energyUsed = sample ? sample.energyUsedKWh : 0;
+      const batteryRemainingKWh = Math.max(0, simulationInitialChargeKWh - energyUsed);
+      const batteryRemainingPercent = battery.capacityKWh > 0 ? batteryRemainingKWh / battery.capacityKWh * 100 : 0;
+      const oxygenUsed = sample ? sample.oxygenWeightL : 0;
+      const oxygenRemainingL = Math.max(0, stores.oxygenCapacityL - oxygenUsed);
+      const caloriesUsed = sample ? sample.caloriesUsedKcal : 0;
+      const foodMassUsed = sample ? sample.foodMassUsedKg : 0;
+      const foodCaloriesRemaining = Math.max(0, stores.foodAvailableKg * stores.kcalPerKg - caloriesUsed);
+      const foodMassRemaining = Math.max(0, stores.foodAvailableKg - foodMassUsed);
+      const waterUsed = sample ? sample.waterUsedL : 0;
+      const waterRemainingL = Math.max(0, stores.waterAvailableL - waterUsed);
+      const energyNeedRemaining = Math.max(0, profile.totalEnergyKWh - energyUsed);
+      const oxygenNeedRemaining = Math.max(0, profile.totalOxygenL - oxygenUsed);
+      const foodNeedRemaining = Math.max(0, profile.totalCaloriesKcal - caloriesUsed);
+      const waterNeedRemaining = Math.max(0, profile.totalWaterL - waterUsed);
+      const resourceRisks = [];
+      if (energyNeedRemaining > batteryRemainingKWh + 1e-6) resourceRisks.push('battery');
+      if (oxygenNeedRemaining > oxygenRemainingL + 1e-6) resourceRisks.push('O₂');
+      if (foodNeedRemaining > foodCaloriesRemaining + 1e-6) resourceRisks.push('food');
+      if (waterNeedRemaining > waterRemainingL + 1e-6) resourceRisks.push('water');
+      const elev = sample && Number.isFinite(sample.elevationM) ? sample.elevationM : NaN;
+      const slope = sample && Number.isFinite(sample.slopeDeg) ? sample.slopeDeg : NaN;
+      const put = function (id, value) { const el = document.getElementById(id); if (el) el.textContent = value; };
+      put('sim-coords', pos.lat.toFixed(5) + '°, ' + pos.lng.toFixed(5) + '°');
+      put('sim-elevation', Number.isFinite(elev) ? Math.round(elev).toLocaleString('en-US') + ' m' : 'Unavailable');
+      put('sim-slope', Number.isFinite(slope) ? slope.toFixed(1) + '°' : 'Unavailable');
+      put('sim-battery', batteryRemainingPercent.toFixed(1) + '% · ' + batteryRemainingKWh.toFixed(2) + ' kWh');
+      put('sim-o2', oxygenRemainingL.toFixed(1) + ' L');
+      put('sim-food', Math.round(foodCaloriesRemaining).toLocaleString('en-US') + ' kcal · ' + foodMassRemaining.toFixed(2) + ' kg');
+      put('sim-water', waterRemainingL.toFixed(2) + ' L');
+      put('sim-distance', (traveledM / 1000).toFixed(2) + ' / ' + (remainingM / 1000).toFixed(2) + ' km left');
+      const alert = document.getElementById('sim-hazard-alert');
+      if (alert) {
+        if (Number.isFinite(slope) && slope > 15) {
+          alert.className = 'sim-hazard risk';
+          alert.textContent = '⚠️ LIVE HAZARD: Rover is in an estimated ' + slope.toFixed(1) + '° slope section (>15°). Rollover / EVA strain risk.';
+        } else if (resourceRisks.length) {
+          alert.className = 'sim-hazard risk';
+          alert.textContent = '🚨 LIVE SURVIVAL WARNING: Remaining route demand exceeds available ' + resourceRisks.join(', ') + ' stores.';
+        } else if (!Number.isFinite(slope)) {
+          alert.className = 'sim-hazard unknown';
+          alert.textContent = '⚪ Live slope unavailable at this point; missing data does not indicate safe terrain.';
+        } else {
+          alert.className = 'sim-hazard nominal';
+          alert.textContent = '✅ Current segment: estimated inclination ' + slope.toFixed(1) + '°; resource stores cover the remaining modeled route.';
+        }
+      }
+      setSimulationButtons();
+    }
+
+    function setSimulationPosition(distanceM) {
+      if (!route || !route.pts || route.pts.length < 2) return;
+      simulationDistanceM = Math.max(0, Math.min(simulationProfile ? simulationProfile.totalDistanceM : route.distance, distanceM));
+      const profile = simulationProfile || route.batteryProfile;
+      const sample = segmentAtDistance(profile, simulationDistanceM);
+      if (sample) roverPosition = { lat: sample.lat, lng: sample.lng };
+      else roverPosition = { lat: route.pts[0][0], lng: route.pts[0][1] };
+      syncRoverMarker(false);
+      updateSimulationHud();
+    }
+
+    function simulationTick(timestamp) {
+      if (!simulationRunning || !route || !simulationProfile) return;
+      if (!simulationLastTimestamp) simulationLastTimestamp = timestamp;
+      const dt = Math.max(0, Math.min(0.2, (timestamp - simulationLastTimestamp) / 1000));
+      simulationLastTimestamp = timestamp;
+      const travelSpeedKmh = Math.max(parseFloat(document.getElementById('speed').value) || 10, 0.1);
+      const multiplier = Math.max(1, parseFloat(document.getElementById('sim-speed').value) || 1);
+      const nextDistance = simulationDistanceM + travelSpeedKmh * 1000 / 3600 * multiplier * dt;
+      setSimulationPosition(nextDistance);
+      if (globe && timestamp - simulationLastGlobeSync >= 100) {
+        simulationLastGlobeSync = timestamp;
+        syncGlobeSite();
+        syncGlobeRover();
+      }
+      if (simulationDistanceM >= simulationProfile.totalDistanceM - 0.01) {
+        simulationRunning = false;
+        simulationFrameId = 0;
+        simulationLastTimestamp = 0;
+        setSimulationStatus('✅ Traverse complete. Review the final telemetry and terrain warnings.');
+        setSimulationButtons();
+        updateSimulationHud();
+        syncRoverMarker(true);
+        return;
+      }
+      simulationFrameId = requestAnimationFrame(simulationTick);
+    }
+
+    function playSimulation() {
+      if (!route || !route.pts || route.pts.length < 2) {
+        setSimulationStatus('Choose a destination and wait for route planning to finish first.');
+        return;
+      }
+      if (simulationRunning) return;
+      if (simulationDistanceM >= route.distance) simulationDistanceM = 0;
+      const speedKmh = Math.max(parseFloat(document.getElementById('speed').value) || 10, 0.1);
+      simulationProfile = createBatteryProfile(route, speedKmh);
+      simulationInitialChargeKWh = batterySettings().availableChargeKWh;
+      simulationStarted = true;
+      if (!route.survival) route.survival = calculateSurvivalMetrics(route, route.distance / 1000 / speedKmh);
+      simulationRunning = true;
+      simulationLastTimestamp = 0;
+      setSimulationStatus('Simulation running · ' + (document.getElementById('sim-speed').value || 1) + '× playback. Telemetry is an estimate.');
+      setSimulationPosition(simulationDistanceM);
+      setSimulationButtons();
+      simulationFrameId = requestAnimationFrame(simulationTick);
+    }
+
+    function pauseSimulation() {
+      if (!simulationRunning) return;
+      simulationRunning = false;
+      if (simulationFrameId) cancelAnimationFrame(simulationFrameId);
+      simulationFrameId = 0;
+      simulationLastTimestamp = 0;
+      setSimulationStatus('Simulation paused at ' + (simulationDistanceM / 1000).toFixed(2) + ' km.');
+      setSimulationButtons();
+      updateSimulationHud();
+    }
+
+    function resetSimulation() {
+      if (!route || !route.pts || route.pts.length < 2) {
+        stopSimulation(true, 'Set a destination and calculate a route to reset the rover.');
+        return;
+      }
+      stopSimulation(false);
+      simulationStarted = true;
+      simulationDistanceM = 0;
+      simulationInitialChargeKWh = batterySettings().availableChargeKWh;
+      simulationProfile = createBatteryProfile(route, Math.max(parseFloat(document.getElementById('speed').value) || 10, 0.1));
+      roverPosition = { lat: route.pts[0][0], lng: route.pts[0][1] };
+      setSimulationStatus('Rover reset to the route start. Press Play to traverse.');
+      syncRoverMarker(true);
+      updateSimulationHud();
     }
 
     
     function renderRoute() {
+      stopSimulation(true);
       routeGroup.clearLayers();
       if (start.custom) {
         L.marker([start.lat, start.lng], {
@@ -2300,6 +3102,11 @@
       syncCoordInputs();
       updateRouteInfo();
       syncGlobeRoute();
+      syncRoverMarker(true);
+      setSimulationButtons();
+      setSimulationStatus(route && route.pts && route.pts.length > 1
+        ? 'Route ready. Press Play Simulation to start the traverse.'
+        : 'Set a destination and calculate a route to begin.');
     }
 
     function setStart(lat, lng) {
@@ -2333,6 +3140,7 @@
     }
 
     function clearRoute() {
+      stopSimulation(true);
       planJob++;
       dest = null;
       start = { lat: SITE.lat, lng: SITE.lng, custom: false };
@@ -2350,7 +3158,62 @@
       setPickMode(pickMode === 'dest' ? null : 'dest');
     });
     document.getElementById('clear-btn').addEventListener('click', clearRoute);
-    document.getElementById('speed').addEventListener('input', updateRouteInfo);
+    document.getElementById('speed').addEventListener('input', function () {
+      stopSimulation(true);
+      updateRouteInfo();
+    });
+    document.getElementById('sim-play').addEventListener('click', playSimulation);
+    document.getElementById('sim-pause').addEventListener('click', pauseSimulation);
+    document.getElementById('sim-reset').addEventListener('click', resetSimulation);
+    document.getElementById('sim-speed').addEventListener('input', function () {
+      const presets = [1, 5, 10];
+      const raw = parseFloat(this.value) || 1;
+      const snapped = presets.reduce(function (best, value) {
+        return Math.abs(value - raw) < Math.abs(best - raw) ? value : best;
+      }, presets[0]);
+      this.value = String(snapped);
+      document.getElementById('sim-speed-value').textContent = snapped + '×';
+      if (simulationRunning) setSimulationStatus('Simulation running · ' + snapped + '× playback.');
+    });
+    ['battery-capacity', 'battery-level', 'energy-per-km', 'slope-energy-factor',
+      'oxygen-capacity', 'calories-per-day', 'kcal-per-kg', 'food-available',
+      'water-per-day', 'water-available', 'food-slope-strain', 'water-slope-strain'].forEach(function (id) {
+      const el = document.getElementById(id);
+      el.addEventListener('input', function () {
+        stopSimulation(true, 'Survival model updated. Reset or play the simulation to refresh live telemetry.');
+        updateBatteryConfigLabel();
+        updateRouteInfo();
+      });
+      el.addEventListener('change', function () {
+        const value = parseFloat(el.value);
+        if (id === 'battery-capacity') {
+          if (!Number.isFinite(value) || value < 0.1) el.value = value < 0.1 ? '0.1' : String(SURVIVAL_MODEL.defaultBatteryCapacityKWh);
+          if (parseFloat(el.value) > 1000) el.value = '1000';
+        }
+        if (id === 'battery-level') {
+          if (!Number.isFinite(value)) el.value = String(SURVIVAL_MODEL.defaultCurrentChargePercent);
+        }
+        if (id === 'energy-per-km' || id === 'slope-energy-factor') {
+          if (!Number.isFinite(value) || value < 0) el.value = '0';
+        }
+        const limits = {
+          'oxygen-capacity': [0, 100000, SURVIVAL_MODEL.defaultOxygenCapacityL],
+          'calories-per-day': [0, 20000, SURVIVAL_MODEL.defaultCaloriesPerDay],
+          'kcal-per-kg': [1, 10000, SURVIVAL_MODEL.defaultKcalPerKg],
+          'food-available': [0, 1000, SURVIVAL_MODEL.defaultFoodAvailableKg],
+          'water-per-day': [0, 100, SURVIVAL_MODEL.defaultWaterPerDayL],
+          'water-available': [0, 10000, SURVIVAL_MODEL.defaultWaterAvailableL],
+          'food-slope-strain': [0, 10, SURVIVAL_MODEL.defaultFoodSlopeStrainPctPerDegree],
+          'water-slope-strain': [0, 10, SURVIVAL_MODEL.defaultWaterSlopeStrainPctPerDegree]
+        };
+        if (limits[id]) {
+          const limit = limits[id];
+          el.value = String(Number.isFinite(value) ? Math.max(limit[0], Math.min(limit[1], value)) : limit[2]);
+        }
+        updateBatteryConfigLabel();
+        updateRouteInfo();
+      });
+    });
     document.getElementById('avoid').addEventListener('input', function () {
       if (!dest || !terrainCache || terrainCache.key !== planKey()) return;
       const job = ++planJob;
@@ -2667,10 +3530,60 @@
       });
     });
 
+    map.on('layeradd layerremove', function (e) {
+      if (e.layer !== routeGroup) return;
+      syncRoverMarker(true);
+      if (globe) syncGlobeRoute();
+    });
+
     map.on('click', function (e) {
       if (!pickMode || globeActive) return;
       setPoint(e.latlng.lat, e.latlng.lng);
     });
+
+    function activateMissionTab(tab) {
+      const allowed = ['map', 'planner', 'survival', 'simulation'];
+      if (allowed.indexOf(tab) < 0) tab = 'map';
+      document.body.dataset.missionTab = tab;
+      document.querySelectorAll('[data-mission-tab]').forEach(function (button) {
+        const active = button.dataset.missionTab === tab;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      document.querySelectorAll('#side details[data-ui-section="map"]').forEach(function (card) {
+        card.hidden = tab !== 'map';
+      });
+      const routeDetails = document.getElementById('route-details');
+      if (routeDetails) {
+        routeDetails.hidden = tab === 'map';
+        if (tab !== 'map') routeDetails.open = true;
+      }
+      document.querySelectorAll('[data-route-pane]').forEach(function (pane) {
+        pane.hidden = pane.dataset.routePane !== tab;
+      });
+      if (tab === 'map') {
+        document.querySelectorAll('#side details[data-ui-section="map"]').forEach(function (card) {
+          if (card.dataset.userCollapsed !== 'true') card.open = true;
+        });
+      }
+      if (tab === 'survival') updateRouteInfo();
+      if (tab === 'simulation') updateSimulationHud();
+      if (globeActive && globe && typeof globe.width === 'function') {
+        const size = globeSize();
+        globe.width(size.w).height(size.h);
+      }
+    }
+
+    document.querySelectorAll('[data-mission-tab]').forEach(function (button) {
+      button.addEventListener('click', function () { activateMissionTab(button.dataset.missionTab); });
+    });
+    document.querySelectorAll('#side details[data-ui-section="map"]').forEach(function (card) {
+      card.addEventListener('toggle', function () { card.dataset.userCollapsed = card.open ? 'false' : 'true'; });
+    });
+    activateMissionTab('map');
+    updateBatteryConfigLabel();
+    setSimulationButtons();
+    updateSimulationHud();
   </script>
 </body>
 </html>
